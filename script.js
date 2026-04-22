@@ -462,6 +462,13 @@ function saturnOrbitalAngularSpeed(aKm) {
   return iapetusW * Math.pow(SATURN_IAPETUS_RADIUS_KM / aKm, 1.5);
 }
 
+function trueAnomalyRate(meanMotion, e, nu) {
+  if (meanMotion <= 0) return 0;
+  const denom = Math.pow(1 - e * e, 1.5);
+  const factor = Math.pow(1 + e * Math.cos(nu), 2);
+  return meanMotion * (factor / denom);
+}
+
 function makeStationCircularEarth() {
   const radiusKm = EARTH_MOON_DISTANCE_KM * randomInRange(0.05, 0.15);
   const isRetrograde = Math.random() < 0.1;
@@ -807,8 +814,9 @@ function updateSaturnOrbits(dt) {
       const w = saturnOrbitalAngularSpeed(station.radiusKm);
       station.angle += (station.isRetrograde ? -1 : 1) * w * dt;
     } else {
-      const w = saturnOrbitalAngularSpeed(station.aKm);
-      station.nu += (station.isRetrograde ? -1 : 1) * w * dt;
+      const meanMotion = saturnOrbitalAngularSpeed(station.aKm);
+      const nuRate = trueAnomalyRate(meanMotion, station.e, station.nu);
+      station.nu += (station.isRetrograde ? -1 : 1) * nuRate * dt;
     }
   }
 }
@@ -873,8 +881,9 @@ function updateEarthOrbits(dt) {
       const localW = orbitalAngularSpeed(moonOrbitRadius) * 16;
       station.angle += (station.isRetrograde ? -1 : 1) * localW * dt;
     } else {
-      const w = orbitalAngularSpeed(station.aKm);
-      station.nu += (station.isRetrograde ? -1 : 1) * w * dt;
+      const meanMotion = orbitalAngularSpeed(station.aKm);
+      const nuRate = trueAnomalyRate(meanMotion, station.e, station.nu);
+      station.nu += (station.isRetrograde ? -1 : 1) * nuRate * dt;
     }
   }
 }
