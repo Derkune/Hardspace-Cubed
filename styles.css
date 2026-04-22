@@ -30,9 +30,24 @@ body {
 .controls {
   width: min(92vmin, 760px);
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tab-row {
+  width: 100%;
+  display: flex;
+  justify-content: center;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
+}
+
+.slider-row {
+  width: 100%;
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  flex-wrap: nowrap;
 }
 
 .screen-btn {
@@ -53,16 +68,20 @@ body {
 }
 
 .slider-group {
-  margin-left: auto;
+  flex: 1 1 0;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   border: 1px solid rgba(255, 255, 255, 0.45);
   padding: 6px 10px;
+  justify-content: space-between;
 }
 
 .slider-group input[type="range"] {
   accent-color: var(--fg);
+  width: 100%;
+  min-width: 0;
 }
 
 .slider-with-indicator {
