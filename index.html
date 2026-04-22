@@ -9,12 +9,12 @@
   <body>
     <div class="app">
       <div class="controls">
-        <button class="screen-btn active" type="button" data-screen="1">Screen 1</button>
-        <button class="screen-btn" type="button" data-screen="2">Screen 2</button>
-        <button class="screen-btn" type="button" data-screen="3">Screen 3</button>
+        <button class="screen-btn active" type="button" data-screen="1">Local Sector</button>
+        <button class="screen-btn" type="button" data-screen="2">Solar System</button>
+        <button class="screen-btn" type="button" data-screen="3">Cislunar Space</button>
 
         <label class="slider-group" for="neighbors" data-controls="1">
-          <span>Closest neighbors:</span>
+          <span>Star lanes:</span>
           <span class="slider-with-indicator">
             <input id="neighbors" type="range" min="0" max="20" value="6" />
             <span id="neighbors-connectivity" class="slider-indicator" aria-hidden="true">?</span>
@@ -23,13 +23,13 @@
         </label>
 
         <label class="slider-group" for="ship-count" data-controls="1">
-          <span>Starships:</span>
+          <span>Ships:</span>
           <input id="ship-count" type="range" min="0" max="200" value="100" />
           <output id="ship-count-value" for="ship-count">100</output>
         </label>
 
         <label class="slider-group" for="ship-speed" data-controls="1">
-          <span>Ship speed x:</span>
+          <span>Time acceleration:</span>
           <input id="ship-speed" type="range" min="0" max="10" value="5" />
           <output id="ship-speed-value" for="ship-speed">5</output>
         </label>
@@ -41,7 +41,7 @@
         </label>
 
         <label class="slider-group is-hidden" for="solar-neighbors" data-controls="2">
-          <span>Closest neighbors:</span>
+          <span>System lanes:</span>
           <input id="solar-neighbors" type="range" min="0" max="3" value="1" />
           <output id="solar-neighbors-value" for="solar-neighbors">1</output>
         </label>

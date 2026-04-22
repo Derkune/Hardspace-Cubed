@@ -271,7 +271,9 @@ function updateStarConnectivityIndicator(force) {
     starConnectivityState = isGraphConnected(adjacency);
     starConnectivityDirty = false;
   }
-  neighborsConnectivity.textContent = starConnectivityState ? "OK" : "NO";
+  neighborsConnectivity.textContent = starConnectivityState
+    ? "Connected"
+    : "Disconnected";
   neighborsConnectivity.classList.toggle("is-connected", starConnectivityState);
   updateSliderIndicatorPosition();
 }
