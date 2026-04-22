@@ -19,6 +19,19 @@ const MIN_SHIP_SPEED_MULTIPLIER_SLIDER = 0;
 const MAX_SHIP_SPEED_MULTIPLIER_SLIDER = 10;
 const BASE_MOON_PERIOD_SECONDS = 60;
 const BASE_MOON_ACCEL = 5;
+const SATURN_IAPETUS_RADIUS_KM = 3560820;
+const BASE_IAPETUS_PERIOD_SECONDS = 60;
+const BASE_IAPETUS_ACCEL = 5;
+
+const saturnMoons = [
+  { name: "Mimas", orbitKm: 185539, periodDays: 0.942, angle: Math.random() * Math.PI * 2 },
+  { name: "Enceladus", orbitKm: 238042, periodDays: 1.37, angle: Math.random() * Math.PI * 2 },
+  { name: "Tethys", orbitKm: 294672, periodDays: 1.888, angle: Math.random() * Math.PI * 2 },
+  { name: "Dione", orbitKm: 377415, periodDays: 2.737, angle: Math.random() * Math.PI * 2 },
+  { name: "Rhea", orbitKm: 527108, periodDays: 4.518, angle: Math.random() * Math.PI * 2 },
+  { name: "Titan", orbitKm: 1221870, periodDays: 15.945, angle: Math.random() * Math.PI * 2 },
+  { name: "Iapetus", orbitKm: 3560820, periodDays: 79.3215, angle: Math.random() * Math.PI * 2 },
+];
 
 const planets = [
   { orbitAu: 0.387, periodYears: 0.241, angle: Math.random() * Math.PI * 2 },
@@ -58,6 +71,12 @@ const earthAccelSlider = document.getElementById("earth-time-accel");
 const earthAccelValue = document.getElementById("earth-time-accel-value");
 const stationCountSlider = document.getElementById("station-count");
 const stationCountValue = document.getElementById("station-count-value");
+const saturnCanvas = document.getElementById("saturn-canvas");
+const saturnCtx = saturnCanvas.getContext("2d");
+const saturnAccelSlider = document.getElementById("saturn-time-accel");
+const saturnAccelValue = document.getElementById("saturn-time-accel-value");
+const saturnStationCountSlider = document.getElementById("saturn-station-count");
+const saturnStationCountValue = document.getElementById("saturn-station-count-value");
 const sideScaleLabel = document.getElementById("side-scale-label");
 
 let currentScreen = "1";
@@ -73,6 +92,9 @@ let earthTimeAcceleration = Number(earthAccelSlider.value);
 let stationCount = Number(stationCountSlider.value);
 let allStations = [];
 let moonAngle = Math.random() * Math.PI * 2;
+let saturnTimeAcceleration = Number(saturnAccelSlider.value);
+let saturnStationCount = Number(saturnStationCountSlider.value);
+let allSaturnStations = [];
 let lastFrameTs = performance.now();
 let starConnectivityDirty = true;
 let starConnectivityState = false;
@@ -176,6 +198,10 @@ function currentScreenSideLengthKm() {
   }
 
   if (currentScreen === "3") {
+    return (SATURN_IAPETUS_RADIUS_KM / 0.45);
+  }
+
+  if (currentScreen === "4") {
     return 385000 * radiusToSideFactor;
   }
 
@@ -417,10 +443,23 @@ function moonAngularSpeed() {
   return (Math.PI * 2) / secondsPerOrbit;
 }
 
+function iapetusAngularSpeed() {
+  if (saturnTimeAcceleration <= 0) return 0;
+  const secondsPerOrbit =
+    BASE_IAPETUS_PERIOD_SECONDS * (BASE_IAPETUS_ACCEL / saturnTimeAcceleration);
+  return (Math.PI * 2) / secondsPerOrbit;
+}
+
 function orbitalAngularSpeed(aKm) {
   const moonW = moonAngularSpeed();
   if (moonW <= 0) return 0;
   return moonW * Math.pow(EARTH_MOON_DISTANCE_KM / aKm, 1.5);
+}
+
+function saturnOrbitalAngularSpeed(aKm) {
+  const iapetusW = iapetusAngularSpeed();
+  if (iapetusW <= 0) return 0;
+  return iapetusW * Math.pow(SATURN_IAPETUS_RADIUS_KM / aKm, 1.5);
 }
 
 function makeStationCircularEarth() {
@@ -494,6 +533,68 @@ function generateAllStations() {
   return generateStations(MAX_STATIONS);
 }
 
+function makeSaturnCircularStation(hostType, hostIndex) {
+  return {
+    type: "saturnCircular",
+    hostType,
+    hostIndex,
+    radiusKm: SATURN_IAPETUS_RADIUS_KM * randomInRange(0.01, 0.1),
+    angle: Math.random() * Math.PI * 2,
+    isRetrograde: Math.random() < 0.1,
+  };
+}
+
+function makeSaturnEllipticalStation() {
+  const e = randomInRange(0.05, 0.88);
+  const minApogee = SATURN_IAPETUS_RADIUS_KM * 0.08;
+  const apogeeKm = randomInRange(minApogee, SATURN_IAPETUS_RADIUS_KM);
+  return {
+    type: "saturnElliptical",
+    e,
+    aKm: apogeeKm / (1 + e),
+    omega: Math.random() * Math.PI * 2,
+    nu: Math.random() * Math.PI * 2,
+    isRetrograde: Math.random() < 0.1,
+  };
+}
+
+function generateSaturnStations(count) {
+  const generated = [];
+  const circularCount = Math.round(count * 0.7);
+  const ellipticalCount = count - circularCount;
+  const hostCount = 8;
+  const basePerHost = Math.floor(circularCount / hostCount);
+  const remainder = circularCount % hostCount;
+
+  for (let host = 0; host < hostCount; host += 1) {
+    const perHostCount = basePerHost + (host < remainder ? 1 : 0);
+    for (let i = 0; i < perHostCount; i += 1) {
+      if (host === 0) {
+        generated.push(makeSaturnCircularStation("saturn", -1));
+      } else {
+        generated.push(makeSaturnCircularStation("moon", host - 1));
+      }
+    }
+  }
+
+  for (let i = 0; i < ellipticalCount; i += 1) {
+    generated.push(makeSaturnEllipticalStation());
+  }
+
+  for (let i = generated.length - 1; i > 0; i -= 1) {
+    const j = randomInt(i + 1);
+    const temp = generated[i];
+    generated[i] = generated[j];
+    generated[j] = temp;
+  }
+
+  return generated;
+}
+
+function generateAllSaturnStations() {
+  return generateSaturnStations(MAX_STATIONS);
+}
+
 function rotatePoint(x, y, angle) {
   const c = Math.cos(angle);
   const s = Math.sin(angle);
@@ -517,6 +618,42 @@ function stationPositionAndHeading(station, moonX, moonY) {
     let heading = station.angle + Math.PI / 2;
     if (station.isRetrograde) heading += Math.PI;
     return { x, y, heading };
+  }
+
+  const cosNu = Math.cos(station.nu);
+  const sinNu = Math.sin(station.nu);
+  const r = (station.aKm * (1 - station.e * station.e)) / (1 + station.e * cosNu);
+  const local = rotatePoint(r * cosNu, r * sinNu, station.omega);
+  const flightPath = Math.atan2(station.e * sinNu, 1 + station.e * cosNu);
+  let heading = station.omega + station.nu + Math.PI / 2 - flightPath;
+  if (station.isRetrograde) heading += Math.PI;
+  return { x: local.x, y: local.y, heading };
+}
+
+function saturnMoonPosition(moon) {
+  return {
+    x: Math.cos(moon.angle) * moon.orbitKm,
+    y: Math.sin(moon.angle) * moon.orbitKm,
+  };
+}
+
+function saturnStationHostPosition(station, moonPositions) {
+  if (station.hostType === "saturn") {
+    return { x: 0, y: 0 };
+  }
+
+  const moonPosition = moonPositions[station.hostIndex];
+  return moonPosition || { x: 0, y: 0 };
+}
+
+function saturnStationPositionAndHeading(station, moonPositions) {
+  if (station.type === "saturnCircular") {
+    const host = saturnStationHostPosition(station, moonPositions);
+    const localX = Math.cos(station.angle) * station.radiusKm;
+    const localY = Math.sin(station.angle) * station.radiusKm;
+    let heading = station.angle + Math.PI / 2;
+    if (station.isRetrograde) heading += Math.PI;
+    return { x: host.x + localX, y: host.y + localY, heading };
   }
 
   const cosNu = Math.cos(station.nu);
@@ -570,6 +707,110 @@ function drawStationOrbitLine(ctx, station, center, kmToPx, moonX, moonY) {
     Math.PI * 2
   );
   ctx.stroke();
+}
+
+function drawSaturnStationOrbitLine(ctx, station, center, kmToPx, moonPositions) {
+  ctx.beginPath();
+
+  if (station.type === "saturnCircular") {
+    const host = saturnStationHostPosition(station, moonPositions);
+    ctx.arc(
+      center + host.x * kmToPx,
+      center + host.y * kmToPx,
+      station.radiusKm * kmToPx,
+      0,
+      Math.PI * 2
+    );
+    ctx.stroke();
+    return;
+  }
+
+  const bKm = station.aKm * Math.sqrt(1 - station.e * station.e);
+  const centerOffset = rotatePoint(-station.aKm * station.e, 0, station.omega);
+  ctx.ellipse(
+    center + centerOffset.x * kmToPx,
+    center + centerOffset.y * kmToPx,
+    station.aKm * kmToPx,
+    bKm * kmToPx,
+    station.omega,
+    0,
+    Math.PI * 2
+  );
+  ctx.stroke();
+}
+
+function drawSaturnScene() {
+  const size = saturnCanvas.width;
+  const center = size / 2;
+  const edgeMargin = size / 20;
+  const iapetusRadiusPx = center - edgeMargin;
+  const kmToPx = iapetusRadiusPx / SATURN_IAPETUS_RADIUS_KM;
+
+  saturnCtx.clearRect(0, 0, size, size);
+  saturnCtx.lineWidth = 1;
+  saturnCtx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+
+  for (const moon of saturnMoons) {
+    saturnCtx.beginPath();
+    saturnCtx.arc(center, center, moon.orbitKm * kmToPx, 0, Math.PI * 2);
+    saturnCtx.stroke();
+  }
+
+  const moonPositions = saturnMoons.map((moon) => saturnMoonPosition(moon));
+
+  saturnCtx.fillStyle = "rgb(255, 255, 255)";
+  saturnCtx.beginPath();
+  saturnCtx.arc(center, center, 4.8, 0, Math.PI * 2);
+  saturnCtx.fill();
+
+  for (const moonPos of moonPositions) {
+    saturnCtx.beginPath();
+    saturnCtx.arc(center + moonPos.x * kmToPx, center + moonPos.y * kmToPx, 3.2, 0, Math.PI * 2);
+    saturnCtx.fill();
+  }
+
+  saturnCtx.strokeStyle = "rgba(255, 255, 255, 0.24)";
+  for (let i = 0; i < saturnStationCount; i += 1) {
+    drawSaturnStationOrbitLine(
+      saturnCtx,
+      allSaturnStations[i],
+      center,
+      kmToPx,
+      moonPositions
+    );
+  }
+
+  saturnCtx.fillStyle = "rgba(255, 255, 255, 0.9)";
+  for (let i = 0; i < saturnStationCount; i += 1) {
+    const orbital = saturnStationPositionAndHeading(allSaturnStations[i], moonPositions);
+    drawStationSquare(
+      saturnCtx,
+      center + orbital.x * kmToPx,
+      center + orbital.y * kmToPx,
+      orbital.heading,
+      3.1
+    );
+  }
+}
+
+function updateSaturnOrbits(dt) {
+  const iapetusW = iapetusAngularSpeed();
+  const iapetusPeriodDays = saturnMoons[saturnMoons.length - 1].periodDays;
+
+  for (const moon of saturnMoons) {
+    const w = iapetusW * (iapetusPeriodDays / moon.periodDays);
+    moon.angle += w * dt;
+  }
+
+  for (const station of allSaturnStations) {
+    if (station.type === "saturnCircular") {
+      const w = saturnOrbitalAngularSpeed(station.radiusKm);
+      station.angle += (station.isRetrograde ? -1 : 1) * w * dt;
+    } else {
+      const w = saturnOrbitalAngularSpeed(station.aKm);
+      station.nu += (station.isRetrograde ? -1 : 1) * w * dt;
+    }
+  }
 }
 
 function drawEarthScene() {
@@ -644,6 +885,8 @@ function resizeCanvases() {
   starCanvas.height = size;
   solarCanvas.width = size;
   solarCanvas.height = size;
+  saturnCanvas.width = size;
+  saturnCanvas.height = size;
   earthCanvas.width = size;
   earthCanvas.height = size;
   points = buildPoints(size, size);
@@ -655,7 +898,8 @@ function resizeCanvases() {
 
   if (currentScreen === "1") drawStarScene();
   if (currentScreen === "2") drawSolarScene();
-  if (currentScreen === "3") drawEarthScene();
+  if (currentScreen === "3") drawSaturnScene();
+  if (currentScreen === "4") drawEarthScene();
 }
 
 function setScreen(nextScreen) {
@@ -670,11 +914,13 @@ function setScreen(nextScreen) {
 
   starCanvas.classList.toggle("is-hidden", nextScreen !== "1");
   solarCanvas.classList.toggle("is-hidden", nextScreen !== "2");
-  earthCanvas.classList.toggle("is-hidden", nextScreen !== "3");
+  saturnCanvas.classList.toggle("is-hidden", nextScreen !== "3");
+  earthCanvas.classList.toggle("is-hidden", nextScreen !== "4");
 
   if (nextScreen === "1") drawStarScene();
   if (nextScreen === "2") drawSolarScene();
-  if (nextScreen === "3") drawEarthScene();
+  if (nextScreen === "3") drawSaturnScene();
+  if (nextScreen === "4") drawEarthScene();
   updateSideScaleLabel();
 }
 
@@ -691,6 +937,9 @@ function tick(frameTs) {
     }
     drawSolarScene();
   } else if (currentScreen === "3") {
+    updateSaturnOrbits(dt);
+    drawSaturnScene();
+  } else if (currentScreen === "4") {
     updateEarthOrbits(dt);
     drawEarthScene();
   }
@@ -737,6 +986,19 @@ solarNeighborsSlider.addEventListener("input", () => {
   if (currentScreen === "2") drawSolarScene();
 });
 
+saturnAccelSlider.addEventListener("input", () => {
+  const next = Number(saturnAccelSlider.value);
+  saturnTimeAcceleration = Math.max(MIN_ACCEL, Math.min(MAX_ACCEL, next));
+  saturnAccelValue.textContent = String(saturnTimeAcceleration);
+});
+
+saturnStationCountSlider.addEventListener("input", () => {
+  const next = Number(saturnStationCountSlider.value);
+  saturnStationCount = Math.max(MIN_STATIONS, Math.min(MAX_STATIONS, next));
+  saturnStationCountValue.textContent = String(saturnStationCount);
+  if (currentScreen === "3") drawSaturnScene();
+});
+
 earthAccelSlider.addEventListener("input", () => {
   const next = Number(earthAccelSlider.value);
   earthTimeAcceleration = Math.max(MIN_ACCEL, Math.min(MAX_ACCEL, next));
@@ -747,7 +1009,7 @@ stationCountSlider.addEventListener("input", () => {
   const next = Number(stationCountSlider.value);
   stationCount = Math.max(MIN_STATIONS, Math.min(MAX_STATIONS, next));
   stationCountValue.textContent = String(stationCount);
-  if (currentScreen === "3") drawEarthScene();
+  if (currentScreen === "4") drawEarthScene();
 });
 
 for (const button of screenButtons) {
@@ -759,6 +1021,7 @@ for (const button of screenButtons) {
 }
 
 allStations = generateAllStations();
+allSaturnStations = generateAllSaturnStations();
 window.addEventListener("resize", resizeCanvases);
 window.addEventListener("resize", updateSliderIndicatorPosition);
 resizeCanvases();
