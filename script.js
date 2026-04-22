@@ -9,6 +9,8 @@ const BASE_JUPITER_PERIOD_SECONDS = 10;
 const BASE_JUPITER_ACCEL = 5;
 const JUPITER_PERIOD_YEARS = 11.862;
 const EARTH_MOON_DISTANCE_KM = 384400;
+const ONE_LY_KM = 9.4607e12;
+const ONE_AU_KM = 149597870.7;
 const MIN_STATIONS = 0;
 const MAX_STATIONS = 200;
 const MIN_STARSHIPS = 0;
@@ -56,6 +58,7 @@ const earthAccelSlider = document.getElementById("earth-time-accel");
 const earthAccelValue = document.getElementById("earth-time-accel-value");
 const stationCountSlider = document.getElementById("station-count");
 const stationCountValue = document.getElementById("station-count-value");
+const sideScaleLabel = document.getElementById("side-scale-label");
 
 let currentScreen = "1";
 let points = [];
@@ -152,6 +155,35 @@ function drawStarScene() {
 
 function getSize() {
   return Math.floor(wrapper.getBoundingClientRect().width);
+}
+
+function toScientificLabelKm(valueKm) {
+  if (valueKm <= 0) return "0.00e0 km";
+  const exponent = Math.floor(Math.log10(valueKm));
+  const coefficient = valueKm / Math.pow(10, exponent);
+  return `${coefficient.toFixed(2)}e${exponent} km`;
+}
+
+function currentScreenSideLengthKm() {
+  if (currentScreen === "1") {
+    return 125 * ONE_LY_KM;
+  }
+
+  const radiusToSideFactor = 1 / 0.45;
+  if (currentScreen === "2") {
+    const sideAu = 35 * radiusToSideFactor;
+    return sideAu * ONE_AU_KM;
+  }
+
+  if (currentScreen === "3") {
+    return 385000 * radiusToSideFactor;
+  }
+
+  return 0;
+}
+
+function updateSideScaleLabel() {
+  sideScaleLabel.textContent = toScientificLabelKm(currentScreenSideLengthKm());
 }
 
 function jupiterAngularSpeed(periodYears) {
@@ -619,6 +651,7 @@ function resizeCanvases() {
   allStarships = generateAllStarships(size, size);
   starConnectivityDirty = true;
   updateStarConnectivityIndicator(true);
+  updateSideScaleLabel();
 
   if (currentScreen === "1") drawStarScene();
   if (currentScreen === "2") drawSolarScene();
@@ -642,6 +675,7 @@ function setScreen(nextScreen) {
   if (nextScreen === "1") drawStarScene();
   if (nextScreen === "2") drawSolarScene();
   if (nextScreen === "3") drawEarthScene();
+  updateSideScaleLabel();
 }
 
 function tick(frameTs) {
