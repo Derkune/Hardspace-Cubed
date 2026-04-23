@@ -146,7 +146,7 @@ const shipDataFallback = {
     size: "1.2 KM",
     name: "Relativistic Starship",
     description:
-      "An enormous mobile base with a relativistic shield, habitation and carrier capabilities, designed to traverse distances between stars at relativistic speeds over the course of decades.",
+      "An enormous mobile base with a relativistic shield, habitation, and carrier capabilities, designed to traverse distances between stars at relativistic speeds over the course of decades.",
   },
 };
 
