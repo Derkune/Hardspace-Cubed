@@ -16,6 +16,7 @@
           <button class="screen-btn" type="button" data-screen="3">Solar System</button>
           <button class="screen-btn" type="button" data-screen="4">Saturn System</button>
           <button class="screen-btn" type="button" data-screen="5">Cislunar Space</button>
+          <button class="screen-btn" type="button" data-screen="6">LEO</button>
         </div>
 
         <div class="slider-row">
@@ -99,6 +100,18 @@
             <input id="station-count" type="range" min="0" max="200" value="100" />
             <output id="station-count-value" for="station-count">100</output>
           </label>
+
+          <label class="slider-group is-hidden" for="leo-time-accel" data-controls="6">
+            <span>Time acceleration:</span>
+            <input id="leo-time-accel" type="range" min="0" max="20" value="5" />
+            <output id="leo-time-accel-value" for="leo-time-accel">5</output>
+          </label>
+
+          <label class="slider-group is-hidden" for="leo-lanes" data-controls="6">
+            <span>Communication lanes:</span>
+            <input id="leo-lanes" type="range" min="0" max="3" value="1" />
+            <output id="leo-lanes-value" for="leo-lanes">1</output>
+          </label>
         </div>
       </div>
 
@@ -125,6 +138,7 @@
           class="screen-canvas is-hidden"
           aria-label="Saturn system screen 4"
         ></canvas>
+        <canvas id="leo-canvas" class="screen-canvas is-hidden" aria-label="LEO screen 6"></canvas>
         <div class="side-scale" aria-hidden="true">
           <span class="side-scale-line"></span>
           <span class="side-scale-top"></span>

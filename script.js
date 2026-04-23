@@ -12,6 +12,7 @@ const JUPITER_PERIOD_YEARS = 11.862;
 const EARTH_MOON_DISTANCE_KM = 384400;
 const ONE_LY_KM = 9.4607e12;
 const ONE_AU_KM = 149597870.7;
+const EARTH_RADIUS_KM = 6371;
 const MIN_STATIONS = 0;
 const MAX_STATIONS = 200;
 const MIN_STARSHIPS = 0;
@@ -24,6 +25,10 @@ const SATURN_IAPETUS_RADIUS_KM = 3560820;
 const BASE_IAPETUS_PERIOD_SECONDS = 60;
 const BASE_IAPETUS_ACCEL = 5;
 const GALAXY_TRAIL_STEPS = 20;
+const LEO_TOTAL_STATIONS = 480;
+const LEO_THETA_EDGE = 0.18;
+const LEO_EARTH_CENTER_Y_FACTOR = 3.42;
+const LEO_EARTH_RADIUS_FACTOR = 2.6;
 const PROXIMA_MARGIN_FACTOR = 1 / 20;
 const PROXIMA_BINARY_ORBIT_FACTOR = 0.035;
 const PROXIMA_STAR3_ORBIT_FACTOR = 0.37;
@@ -100,6 +105,12 @@ const saturnAccelValue = document.getElementById("saturn-time-accel-value");
 const saturnStationCountSlider = document.getElementById("saturn-station-count");
 const saturnStationCountValue = document.getElementById("saturn-station-count-value");
 const sideScaleLabel = document.getElementById("side-scale-label");
+const leoCanvas = document.getElementById("leo-canvas");
+const leoCtx = leoCanvas.getContext("2d");
+const leoAccelSlider = document.getElementById("leo-time-accel");
+const leoAccelValue = document.getElementById("leo-time-accel-value");
+const leoLanesSlider = document.getElementById("leo-lanes");
+const leoLanesValue = document.getElementById("leo-lanes-value");
 
 let currentScreen = "1";
 let galaxyTimeAcceleration = Number(galaxyAccelSlider.value);
@@ -130,6 +141,9 @@ let moonAngle = Math.random() * Math.PI * 2;
 let saturnTimeAcceleration = Number(saturnAccelSlider.value);
 let saturnStationCount = Number(saturnStationCountSlider.value);
 let allSaturnStations = [];
+let leoTimeAcceleration = Number(leoAccelSlider.value);
+let leoLaneCount = Number(leoLanesSlider.value);
+let leoStations = [];
 let lastFrameTs = performance.now();
 let starConnectivityDirty = true;
 let starConnectivityState = false;
@@ -295,6 +309,10 @@ function currentScreenSideLengthKm() {
     return 385000 * radiusToSideFactor;
   }
 
+  if (currentScreen === "6") {
+    return EARTH_RADIUS_KM / LEO_EARTH_RADIUS_FACTOR;
+  }
+
   return 0;
 }
 
@@ -357,6 +375,99 @@ function drawSolarScene() {
     solarCtx.arc(body.x, body.y, 3.2, 0, Math.PI * 2);
     solarCtx.fill();
   }
+}
+
+function leoEarthGeometry(size) {
+  return {
+    cx: size / 2,
+    cy: size * LEO_EARTH_CENTER_Y_FACTOR,
+    radius: size * LEO_EARTH_RADIUS_FACTOR,
+  };
+}
+
+function leoEarthHorizonY(size, x) {
+  const earth = leoEarthGeometry(size);
+  const dx = x - earth.cx;
+  const inside = Math.max(0, earth.radius * earth.radius - dx * dx);
+  return earth.cy - Math.sqrt(inside);
+}
+
+function resetLeoStation(station, size) {
+  const earth = leoEarthGeometry(size);
+  station.radius = earth.radius * randomInRange(1.02, 1.52);
+  station.theta = randomInRange(-Math.PI + LEO_THETA_EDGE, -Math.PI + 0.45);
+  station.omegaBase = randomInRange(0.035, 0.09);
+}
+
+function leoStationPosition(station, size) {
+  const earth = leoEarthGeometry(size);
+  return {
+    x: earth.cx + station.radius * Math.cos(station.theta),
+    y: earth.cy + station.radius * Math.sin(station.theta),
+  };
+}
+
+function generateLeoStations(size) {
+  const generated = [];
+  for (let i = 0; i < LEO_TOTAL_STATIONS; i += 1) {
+    const station = { radius: 0, theta: 0, omegaBase: 0 };
+    resetLeoStation(station, size);
+    const spread = (i / LEO_TOTAL_STATIONS) * (Math.PI - 2 * LEO_THETA_EDGE);
+    station.theta = Math.min(-LEO_THETA_EDGE, station.theta + spread);
+    generated.push(station);
+  }
+  return generated;
+}
+
+function updateLeoStations(dt) {
+  const multiplier = leoTimeAcceleration / 5;
+  const size = leoCanvas.width;
+  for (const station of leoStations) {
+    station.theta += station.omegaBase * multiplier * dt;
+    if (station.theta > -LEO_THETA_EDGE) {
+      resetLeoStation(station, size);
+    }
+  }
+}
+
+function getVisibleLeoStations(size) {
+  const visible = [];
+  for (const station of leoStations) {
+    const pos = leoStationPosition(station, size);
+    if (pos.x < 0 || pos.x > size || pos.y < 0 || pos.y > size) continue;
+    const horizonY = leoEarthHorizonY(size, pos.x);
+    if (pos.y >= horizonY - 2) continue;
+    visible.push(pos);
+  }
+  return visible;
+}
+
+function drawLeoScene() {
+  const size = leoCanvas.width;
+  leoCtx.clearRect(0, 0, size, size);
+
+  const visibleStations = getVisibleLeoStations(size);
+  drawNearestLines(leoCtx, visibleStations, leoLaneCount);
+
+  leoCtx.fillStyle = "rgb(255, 255, 255)";
+  for (const station of visibleStations) {
+    leoCtx.beginPath();
+    leoCtx.arc(station.x, station.y, 2, 0, Math.PI * 2);
+    leoCtx.fill();
+  }
+
+  const earth = leoEarthGeometry(size);
+  const leftY = leoEarthHorizonY(size, 0);
+  const centerY = leoEarthHorizonY(size, size / 2);
+  const rightY = leoEarthHorizonY(size, size);
+  leoCtx.beginPath();
+  leoCtx.moveTo(0, size);
+  leoCtx.lineTo(0, leftY);
+  leoCtx.quadraticCurveTo(earth.cx, centerY, size, rightY);
+  leoCtx.lineTo(size, size);
+  leoCtx.closePath();
+  leoCtx.fillStyle = "rgba(255, 255, 255, 0.95)";
+  leoCtx.fill();
 }
 
 function proximaAngularSpeed(basePeriodSeconds) {
@@ -1201,11 +1312,14 @@ function resizeCanvases() {
   solarCanvas.height = size;
   saturnCanvas.width = size;
   saturnCanvas.height = size;
+  leoCanvas.width = size;
+  leoCanvas.height = size;
   earthCanvas.width = size;
   earthCanvas.height = size;
   points = buildPoints(size, size);
   closestFiveStars = computeClosestStars(5);
   allStarships = generateAllStarships(size, size);
+  leoStations = generateLeoStations(size);
   starConnectivityDirty = true;
   updateStarConnectivityIndicator(true);
   updateSideScaleLabel();
@@ -1216,6 +1330,7 @@ function resizeCanvases() {
   if (currentScreen === "3") drawSolarScene();
   if (currentScreen === "4") drawSaturnScene();
   if (currentScreen === "5") drawEarthScene();
+  if (currentScreen === "6") drawLeoScene();
 }
 
 function setScreen(nextScreen) {
@@ -1234,6 +1349,7 @@ function setScreen(nextScreen) {
   solarCanvas.classList.toggle("is-hidden", nextScreen !== "3");
   saturnCanvas.classList.toggle("is-hidden", nextScreen !== "4");
   earthCanvas.classList.toggle("is-hidden", nextScreen !== "5");
+  leoCanvas.classList.toggle("is-hidden", nextScreen !== "6");
 
   if (nextScreen === "0") drawGalaxyScene();
   if (nextScreen === "1") drawStarScene();
@@ -1241,6 +1357,7 @@ function setScreen(nextScreen) {
   if (nextScreen === "3") drawSolarScene();
   if (nextScreen === "4") drawSaturnScene();
   if (nextScreen === "5") drawEarthScene();
+  if (nextScreen === "6") drawLeoScene();
   updateSideScaleLabel();
 }
 
@@ -1273,6 +1390,9 @@ function tick(frameTs) {
   } else if (currentScreen === "5") {
     updateEarthOrbits(dt);
     drawEarthScene();
+  } else if (currentScreen === "6") {
+    updateLeoStations(dt);
+    drawLeoScene();
   }
 
   requestAnimationFrame(tick);
@@ -1373,6 +1493,19 @@ stationCountSlider.addEventListener("input", () => {
   stationCount = Math.max(MIN_STATIONS, Math.min(MAX_STATIONS, next));
   stationCountValue.textContent = String(stationCount);
   if (currentScreen === "5") drawEarthScene();
+});
+
+leoAccelSlider.addEventListener("input", () => {
+  const next = Number(leoAccelSlider.value);
+  leoTimeAcceleration = Math.max(MIN_ACCEL, Math.min(MAX_ACCEL, next));
+  leoAccelValue.textContent = String(leoTimeAcceleration);
+});
+
+leoLanesSlider.addEventListener("input", () => {
+  const next = Number(leoLanesSlider.value);
+  leoLaneCount = Math.max(0, Math.min(3, next));
+  leoLanesValue.textContent = String(leoLaneCount);
+  if (currentScreen === "6") drawLeoScene();
 });
 
 for (const button of screenButtons) {
