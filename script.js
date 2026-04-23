@@ -7,7 +7,7 @@ const MIN_ACCEL = 0;
 const MAX_ACCEL = 20;
 const MIN_SOLAR_NEIGHBORS = 0;
 const MAX_SOLAR_NEIGHBORS = 3;
-const MAX_GALAXY_ACCEL = 20;
+const MAX_GALAXY_ACCEL = 100;
 const BASE_JUPITER_PERIOD_SECONDS = 10;
 const BASE_JUPITER_ACCEL = 5;
 const JUPITER_PERIOD_YEARS = 11.862;
@@ -26,7 +26,8 @@ const BASE_MOON_ACCEL = 5;
 const SATURN_IAPETUS_RADIUS_KM = 3560820;
 const BASE_IAPETUS_PERIOD_SECONDS = 60;
 const BASE_IAPETUS_ACCEL = 5;
-const GALAXY_TRAIL_STEPS = 20;
+const GALAXY_TRAIL_STEPS = 2000;
+const GALAXY_DESTINATION_STEP_FACTOR = 300;
 const LEO_TOTAL_STATIONS = 4000;
 const LEO_THETA_EDGE = 0.18;
 const LEO_EARTH_CENTER_Y_FACTOR = 3.42;
@@ -504,7 +505,7 @@ function drawGalaxyScene() {
 
   galaxyCtx.strokeStyle = "rgba(255, 255, 255, 0.36)";
   galaxyCtx.fillStyle = "rgba(255, 255, 255, 0.86)";
-  galaxyCtx.lineWidth = 1;
+  galaxyCtx.lineWidth = 0.5;
 
   const visibleCount = Math.min(galaxyVisibleShipCount, galaxyShips.length);
   for (let i = 0; i < visibleCount; i += 1) {
@@ -520,9 +521,11 @@ function drawGalaxyScene() {
       galaxyCtx.stroke();
     }
 
-    for (const point of pathPoints) {
+    for (let p = 0; p < pathPoints.length; p += 1) {
+      const point = pathPoints[p];
+      const isCurrentShipPoint = p === pathPoints.length - 1;
       galaxyCtx.beginPath();
-      galaxyCtx.arc(point.x, point.y, 1.7, 0, Math.PI * 2);
+      galaxyCtx.arc(point.x, point.y, isCurrentShipPoint ? 1.7 : 0.6, 0, Math.PI * 2);
       galaxyCtx.fill();
     }
   }
@@ -1031,7 +1034,7 @@ function galaxyWeight(r, a) {
 function pickNextGalaxyDestination(ship, size) {
   const center = size / 2;
   const a = size / 2;
-  const b = size / 30;
+  const b = size / GALAXY_DESTINATION_STEP_FACTOR;
   const sx = ship.x - center;
   const sy = ship.y - center;
   const rShip = Math.hypot(sx, sy);
@@ -1094,17 +1097,17 @@ function updateGalaxyShips(dt) {
   if (speedMultiplier <= 0) return;
 
   const size = galaxyCanvas.width;
-  const microStepCount = 100;
-  const microDt = dt / microStepCount;
+  for (const ship of galaxyShips) {
+    let remainingDistance = ship.speedPxPerSec * speedMultiplier * dt;
+    let hopGuard = 0;
 
-  for (let microStep = 0; microStep < microStepCount; microStep += 1) {
-    for (const ship of galaxyShips) {
+    while (remainingDistance > 0 && hopGuard < 64) {
+      hopGuard += 1;
       const dx = ship.destX - ship.x;
       const dy = ship.destY - ship.y;
       const dist = Math.hypot(dx, dy);
-      const step = ship.speedPxPerSec * speedMultiplier * microDt;
 
-      if (dist <= step || dist < 0.0001) {
+      if (dist < 0.0001) {
         ship.x = ship.destX;
         ship.y = ship.destY;
         ship.path.push({ x: ship.x, y: ship.y });
@@ -1117,10 +1120,12 @@ function updateGalaxyShips(dt) {
         continue;
       }
 
+      const step = Math.min(remainingDistance, dist);
       const ux = dx / dist;
       const uy = dy / dist;
       ship.x += ux * step;
       ship.y += uy * step;
+      remainingDistance -= step;
     }
   }
 }
