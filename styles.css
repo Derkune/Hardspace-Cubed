@@ -134,7 +134,7 @@ body {
 
 .ship-scale-image {
   height: auto;
-  min-width: 4px;
+  min-width: 0;
   max-width: 100%;
   display: block;
   margin-inline: auto;

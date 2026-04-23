@@ -186,9 +186,9 @@ function getComparisonImageConfig(smallerShipId, largerShipId) {
   };
   const src = mipmaps[key];
   if (src) {
-    return { src, isMipMap: true };
+    return { src };
   }
-  return { src: `${smallerShipId}.png`, isMipMap: false };
+  return { src: `${smallerShipId}.png` };
 }
 
 function renderShipsPanel(shipsData) {
@@ -256,12 +256,9 @@ function renderShipsPanel(shipsData) {
         const comparisonImageConfig = getComparisonImageConfig(smaller.id, ship.id);
         comparisonImage.src = comparisonImageConfig.src;
         comparisonImage.alt = `${smaller.name} to scale`;
-        if (comparisonImageConfig.isMipMap) {
-          // Render authored mipmaps at intrinsic size to avoid stretching.
-          comparisonImage.style.width = "auto";
-        } else {
-          comparisonImage.style.width = `${Math.max(clampedRatio * 100, 0.8)}%`;
-        }
+        // Always size comparisons from in-universe dimensions.
+        // Mipmaps are still used as the source image for cleaner downscaling.
+        comparisonImage.style.width = `${clampedRatio * 100}%`;
 
         const comparisonLabel = document.createElement("span");
         comparisonLabel.className = "ship-scale-label";
