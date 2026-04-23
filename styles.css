@@ -35,6 +35,7 @@ body {
   margin: 0 0 14px;
   font-size: 22px;
   letter-spacing: 0.2px;
+  text-align: center;
 }
 
 .ship-entries {
@@ -52,21 +53,22 @@ body {
 }
 
 .ship-entry-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
+  position: relative;
 }
 
 .ship-entry-name {
   font-size: 18px;
   font-weight: 600;
+  text-align: center;
 }
 
 .ship-entry-size {
   font-size: 13px;
   opacity: 0.9;
   white-space: nowrap;
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 
 .ship-entry-image {
@@ -79,6 +81,7 @@ body {
   margin: 0;
   line-height: 1.4;
   font-size: 14px;
+  text-align: center;
 }
 
 .ship-comparison-list {
