@@ -339,6 +339,17 @@ body {
   letter-spacing: 0.2px;
 }
 
+.local-sector-time-label {
+  position: absolute;
+  top: 8px;
+  left: calc(100% + 14px);
+  white-space: nowrap;
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  pointer-events: none;
+  z-index: 2;
+}
+
 .is-hidden {
   display: none;
 }

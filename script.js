@@ -1,6 +1,10 @@
 const GRID_SIZE = 25;
 const LOCAL_SECTOR_EXTRA_GRID_LAYERS = 1;
 const LOCAL_SECTOR_TIME_ACCEL_FACTOR = 2;
+const LOCAL_SECTOR_SIDE_LENGTH_LY = 125;
+const LOCAL_SECTOR_CROSSING_YEARS = 312.5;
+const LOCAL_SECTOR_BASE_SHIP_SPEED_FACTOR = 0.02;
+const LOCAL_SECTOR_START_YEAR = 3000;
 const MIN_NEIGHBORS = 0;
 const MAX_NEIGHBORS = 20;
 const MIN_ACCEL = 0;
@@ -127,6 +131,7 @@ const leoAccelSlider = document.getElementById("leo-time-accel");
 const leoAccelValue = document.getElementById("leo-time-accel-value");
 const leoLanesSlider = document.getElementById("leo-lanes");
 const leoLanesValue = document.getElementById("leo-lanes-value");
+const localSectorTimeLabel = document.getElementById("local-sector-time-label");
 const shipEntries = document.getElementById("ship-entries");
 
 const shipRenderOrder = ["Worker", "Torchship", "Starship"];
@@ -346,6 +351,7 @@ let saturnRingStations = [];
 let leoTimeAcceleration = Number(leoAccelSlider.value);
 let leoLaneCount = Number(leoLanesSlider.value);
 let leoStations = [];
+let localSectorElapsedYears = 0;
 let lastFrameTs = performance.now();
 let starConnectivityDirty = true;
 let starConnectivityState = false;
@@ -585,6 +591,34 @@ function currentScreenSideLengthKm() {
 
 function updateSideScaleLabel() {
   sideScaleLabel.textContent = toScientificLabelKm(currentScreenSideLengthKm());
+}
+
+function localSectorShipSpeedMultiplier() {
+  return (shipSpeedSliderValue / 2.5) * LOCAL_SECTOR_TIME_ACCEL_FACTOR;
+}
+
+function formatLocalSectorYear() {
+  const year = LOCAL_SECTOR_START_YEAR + localSectorElapsedYears;
+  const roundedYear = Math.round(year);
+  return `Year: ${roundedYear.toLocaleString()} AD`;
+}
+
+function updateLocalSectorTimeLabel() {
+  if (!localSectorTimeLabel) return;
+  localSectorTimeLabel.textContent = formatLocalSectorYear();
+}
+
+function updateLocalSectorClock(dt, size) {
+  if (dt <= 0 || size <= 0) return;
+  const shipSpeedMultiplier = localSectorShipSpeedMultiplier();
+  if (shipSpeedMultiplier <= 0) return;
+
+  const nominalShipSpeedPxPerSec = size * LOCAL_SECTOR_BASE_SHIP_SPEED_FACTOR * shipSpeedMultiplier;
+  if (nominalShipSpeedPxPerSec <= 0) return;
+
+  const crossingSeconds = size / nominalShipSpeedPxPerSec;
+  const yearsPerSecond = LOCAL_SECTOR_CROSSING_YEARS / crossingSeconds;
+  localSectorElapsedYears += yearsPerSecond * dt;
 }
 
 function jupiterAngularSpeed(periodYears) {
@@ -1181,7 +1215,7 @@ function generateAllStarships(width, height) {
 }
 
 function updateStarships(dt) {
-  const shipSpeedMultiplier = (shipSpeedSliderValue / 2.5) * LOCAL_SECTOR_TIME_ACCEL_FACTOR;
+  const shipSpeedMultiplier = localSectorShipSpeedMultiplier();
 
   for (const ship of allStarships) {
     const target = points[ship.targetStarIndex];
@@ -1741,6 +1775,9 @@ function setScreen(nextScreen) {
   earthCanvas.classList.toggle("is-hidden", nextScreen !== "5");
   saturnRingCanvas.classList.toggle("is-hidden", nextScreen !== "6");
   leoCanvas.classList.toggle("is-hidden", nextScreen !== "7");
+  if (localSectorTimeLabel) {
+    localSectorTimeLabel.classList.toggle("is-hidden", nextScreen !== "1");
+  }
 
   if (nextScreen === "0") drawGalaxyScene();
   if (nextScreen === "1") drawStarScene();
@@ -1761,6 +1798,8 @@ function tick(frameTs) {
     updateGalaxyShips(dt);
     drawGalaxyScene();
   } else if (currentScreen === "1") {
+    updateLocalSectorClock(dt, starCanvas.width);
+    updateLocalSectorTimeLabel();
     updateStarships(dt);
     drawStarScene();
   } else if (currentScreen === "2") {
@@ -1838,6 +1877,7 @@ shipSpeedSlider.addEventListener("input", () => {
     Math.min(MAX_SHIP_SPEED_MULTIPLIER_SLIDER, next)
   );
   shipSpeedValue.textContent = String(shipSpeedSliderValue);
+  updateLocalSectorTimeLabel();
 });
 
 accelSlider.addEventListener("input", () => {
@@ -1933,4 +1973,5 @@ window.addEventListener("resize", resizeCanvases);
 window.addEventListener("resize", updateSliderIndicatorPosition);
 resizeCanvases();
 setScreen("0");
+updateLocalSectorTimeLabel();
 requestAnimationFrame(tick);
