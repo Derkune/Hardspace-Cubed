@@ -244,6 +244,10 @@ function toScientificLabelKm(valueKm) {
 }
 
 function currentScreenSideLengthKm() {
+  if (currentScreen === "0") {
+    return 200000 * ONE_LY_KM;
+  }
+
   if (currentScreen === "1") {
     return 125 * ONE_LY_KM;
   }
