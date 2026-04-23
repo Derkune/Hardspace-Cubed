@@ -16,7 +16,8 @@
           <button class="screen-btn" type="button" data-screen="3">Solar System</button>
           <button class="screen-btn" type="button" data-screen="4">Saturn System</button>
           <button class="screen-btn" type="button" data-screen="5">Cislunar Space</button>
-          <button class="screen-btn" type="button" data-screen="6">Low Earth Orbit</button>
+          <button class="screen-btn" type="button" data-screen="6">Saturn Ring Mining</button>
+          <button class="screen-btn" type="button" data-screen="7">Low Earth Orbit</button>
         </div>
 
         <div class="slider-row">
@@ -101,13 +102,25 @@
             <output id="station-count-value" for="station-count">100</output>
           </label>
 
-          <label class="slider-group is-hidden" for="leo-time-accel" data-controls="6">
+          <label class="slider-group is-hidden" for="saturn-ring-time-accel" data-controls="6">
+            <span>Time acceleration:</span>
+            <input id="saturn-ring-time-accel" type="range" min="0" max="20" value="5" />
+            <output id="saturn-ring-time-accel-value" for="saturn-ring-time-accel">5</output>
+          </label>
+
+          <label class="slider-group is-hidden" for="saturn-ring-lanes" data-controls="6">
+            <span>Communication lanes:</span>
+            <input id="saturn-ring-lanes" type="range" min="0" max="3" value="1" />
+            <output id="saturn-ring-lanes-value" for="saturn-ring-lanes">1</output>
+          </label>
+
+          <label class="slider-group is-hidden" for="leo-time-accel" data-controls="7">
             <span>Time acceleration:</span>
             <input id="leo-time-accel" type="range" min="0" max="20" value="5" />
             <output id="leo-time-accel-value" for="leo-time-accel">5</output>
           </label>
 
-          <label class="slider-group is-hidden" for="leo-lanes" data-controls="6">
+          <label class="slider-group is-hidden" for="leo-lanes" data-controls="7">
             <span>Communication lanes:</span>
             <input id="leo-lanes" type="range" min="0" max="3" value="1" />
             <output id="leo-lanes-value" for="leo-lanes">1</output>
@@ -138,7 +151,12 @@
           class="screen-canvas is-hidden"
           aria-label="Saturn system screen 4"
         ></canvas>
-        <canvas id="leo-canvas" class="screen-canvas is-hidden" aria-label="LEO screen 6"></canvas>
+        <canvas
+          id="saturn-ring-canvas"
+          class="screen-canvas is-hidden"
+          aria-label="Saturn ring mining screen 6"
+        ></canvas>
+        <canvas id="leo-canvas" class="screen-canvas is-hidden" aria-label="LEO screen 7"></canvas>
         <div class="side-scale" aria-hidden="true">
           <span class="side-scale-line"></span>
           <span class="side-scale-top"></span>

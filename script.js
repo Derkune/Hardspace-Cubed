@@ -29,6 +29,11 @@ const LEO_TOTAL_STATIONS = 480;
 const LEO_THETA_EDGE = 0.18;
 const LEO_EARTH_CENTER_Y_FACTOR = 3.42;
 const LEO_EARTH_RADIUS_FACTOR = 2.6;
+const SATURN_RING_TOTAL_STATIONS = 120;
+const SATURN_RING_THETA_EDGE = 0.1;
+const SATURN_RING_CENTER_Y_FACTOR = 1.0;
+const SATURN_RING_RADIUS_FACTOR = 0.52;
+const SATURN_RADIUS_KM = 58232;
 const PROXIMA_MARGIN_FACTOR = 1 / 20;
 const PROXIMA_BINARY_ORBIT_FACTOR = 0.035;
 const PROXIMA_STAR3_ORBIT_FACTOR = 0.37;
@@ -107,6 +112,12 @@ const saturnStationCountValue = document.getElementById("saturn-station-count-va
 const sideScaleLabel = document.getElementById("side-scale-label");
 const leoCanvas = document.getElementById("leo-canvas");
 const leoCtx = leoCanvas.getContext("2d");
+const saturnRingCanvas = document.getElementById("saturn-ring-canvas");
+const saturnRingCtx = saturnRingCanvas.getContext("2d");
+const saturnRingAccelSlider = document.getElementById("saturn-ring-time-accel");
+const saturnRingAccelValue = document.getElementById("saturn-ring-time-accel-value");
+const saturnRingLanesSlider = document.getElementById("saturn-ring-lanes");
+const saturnRingLanesValue = document.getElementById("saturn-ring-lanes-value");
 const leoAccelSlider = document.getElementById("leo-time-accel");
 const leoAccelValue = document.getElementById("leo-time-accel-value");
 const leoLanesSlider = document.getElementById("leo-lanes");
@@ -134,6 +145,8 @@ function syncRangeOutputLabels() {
     [saturnStationCountSlider, saturnStationCountValue],
     [earthAccelSlider, earthAccelValue],
     [stationCountSlider, stationCountValue],
+    [saturnRingAccelSlider, saturnRingAccelValue],
+    [saturnRingLanesSlider, saturnRingLanesValue],
     [leoAccelSlider, leoAccelValue],
     [leoLanesSlider, leoLanesValue],
   ];
@@ -175,6 +188,9 @@ let moonAngle = Math.random() * Math.PI * 2;
 let saturnTimeAcceleration = Number(saturnAccelSlider.value);
 let saturnStationCount = Number(saturnStationCountSlider.value);
 let allSaturnStations = [];
+let saturnRingTimeAcceleration = Number(saturnRingAccelSlider.value);
+let saturnRingLaneCount = Number(saturnRingLanesSlider.value);
+let saturnRingStations = [];
 let leoTimeAcceleration = Number(leoAccelSlider.value);
 let leoLaneCount = Number(leoLanesSlider.value);
 let leoStations = [];
@@ -344,6 +360,10 @@ function currentScreenSideLengthKm() {
   }
 
   if (currentScreen === "6") {
+    return SATURN_RADIUS_KM / SATURN_RING_RADIUS_FACTOR;
+  }
+
+  if (currentScreen === "7") {
     return EARTH_RADIUS_KM / LEO_EARTH_RADIUS_FACTOR;
   }
 
@@ -502,6 +522,99 @@ function drawLeoScene() {
   leoCtx.closePath();
   leoCtx.fillStyle = "rgba(255, 255, 255, 0.95)";
   leoCtx.fill();
+}
+
+function saturnRingGeometry(size) {
+  return {
+    cx: size / 2,
+    cy: size * SATURN_RING_CENTER_Y_FACTOR,
+    radius: size * SATURN_RING_RADIUS_FACTOR,
+  };
+}
+
+function saturnRingSurfaceY(size, x) {
+  const saturn = saturnRingGeometry(size);
+  const dx = x - saturn.cx;
+  const inside = Math.max(0, saturn.radius * saturn.radius - dx * dx);
+  return saturn.cy - Math.sqrt(inside);
+}
+
+function resetSaturnRingStation(station, size) {
+  const saturn = saturnRingGeometry(size);
+  station.radius = saturn.radius * randomInRange(1.02, 1.98);
+  station.theta = randomInRange(-Math.PI + SATURN_RING_THETA_EDGE, -Math.PI + 0.45);
+  station.omegaBase = randomInRange(0.028, 0.07);
+}
+
+function saturnRingStationPosition(station, size) {
+  const saturn = saturnRingGeometry(size);
+  return {
+    x: saturn.cx + station.radius * Math.cos(station.theta),
+    y: saturn.cy + station.radius * Math.sin(station.theta),
+  };
+}
+
+function generateSaturnRingStations(size) {
+  const generated = [];
+  for (let i = 0; i < SATURN_RING_TOTAL_STATIONS; i += 1) {
+    const station = { radius: 0, theta: 0, omegaBase: 0 };
+    resetSaturnRingStation(station, size);
+    const spread = (i / SATURN_RING_TOTAL_STATIONS) * (Math.PI - 2 * SATURN_RING_THETA_EDGE);
+    station.theta = Math.min(-SATURN_RING_THETA_EDGE, station.theta + spread);
+    generated.push(station);
+  }
+  return generated;
+}
+
+function updateSaturnRingStations(dt) {
+  const multiplier = saturnRingTimeAcceleration / 5;
+  const size = saturnRingCanvas.width;
+  for (const station of saturnRingStations) {
+    station.theta += station.omegaBase * multiplier * dt;
+    if (station.theta > -SATURN_RING_THETA_EDGE) {
+      resetSaturnRingStation(station, size);
+    }
+  }
+}
+
+function getVisibleSaturnRingStations(size) {
+  const visible = [];
+  for (const station of saturnRingStations) {
+    const pos = saturnRingStationPosition(station, size);
+    if (pos.x < 0 || pos.x > size || pos.y < 0 || pos.y > size) continue;
+    const surfaceY = saturnRingSurfaceY(size, pos.x);
+    if (pos.y >= surfaceY - 2) continue;
+    visible.push(pos);
+  }
+  return visible;
+}
+
+function drawSaturnRingScene() {
+  const size = saturnRingCanvas.width;
+  saturnRingCtx.clearRect(0, 0, size, size);
+
+  const visibleStations = getVisibleSaturnRingStations(size);
+  drawNearestLines(saturnRingCtx, visibleStations, saturnRingLaneCount);
+
+  saturnRingCtx.fillStyle = "rgb(255, 255, 255)";
+  for (const station of visibleStations) {
+    saturnRingCtx.beginPath();
+    saturnRingCtx.arc(station.x, station.y, 2, 0, Math.PI * 2);
+    saturnRingCtx.fill();
+  }
+
+  const saturn = saturnRingGeometry(size);
+  const leftY = saturnRingSurfaceY(size, 0);
+  const centerY = saturnRingSurfaceY(size, size / 2);
+  const rightY = saturnRingSurfaceY(size, size);
+  saturnRingCtx.beginPath();
+  saturnRingCtx.moveTo(0, size);
+  saturnRingCtx.lineTo(0, leftY);
+  saturnRingCtx.quadraticCurveTo(saturn.cx, centerY, size, rightY);
+  saturnRingCtx.lineTo(size, size);
+  saturnRingCtx.closePath();
+  saturnRingCtx.fillStyle = "rgba(255, 255, 255, 0.95)";
+  saturnRingCtx.fill();
 }
 
 function proximaAngularSpeed(basePeriodSeconds) {
@@ -1346,6 +1459,8 @@ function resizeCanvases() {
   solarCanvas.height = size;
   saturnCanvas.width = size;
   saturnCanvas.height = size;
+  saturnRingCanvas.width = size;
+  saturnRingCanvas.height = size;
   leoCanvas.width = size;
   leoCanvas.height = size;
   earthCanvas.width = size;
@@ -1353,6 +1468,7 @@ function resizeCanvases() {
   points = buildPoints(size, size);
   closestFiveStars = computeClosestStars(5);
   allStarships = generateAllStarships(size, size);
+  saturnRingStations = generateSaturnRingStations(size);
   leoStations = generateLeoStations(size);
   starConnectivityDirty = true;
   updateStarConnectivityIndicator(true);
@@ -1364,7 +1480,8 @@ function resizeCanvases() {
   if (currentScreen === "3") drawSolarScene();
   if (currentScreen === "4") drawSaturnScene();
   if (currentScreen === "5") drawEarthScene();
-  if (currentScreen === "6") drawLeoScene();
+  if (currentScreen === "6") drawSaturnRingScene();
+  if (currentScreen === "7") drawLeoScene();
 }
 
 function setScreen(nextScreen) {
@@ -1383,7 +1500,8 @@ function setScreen(nextScreen) {
   solarCanvas.classList.toggle("is-hidden", nextScreen !== "3");
   saturnCanvas.classList.toggle("is-hidden", nextScreen !== "4");
   earthCanvas.classList.toggle("is-hidden", nextScreen !== "5");
-  leoCanvas.classList.toggle("is-hidden", nextScreen !== "6");
+  saturnRingCanvas.classList.toggle("is-hidden", nextScreen !== "6");
+  leoCanvas.classList.toggle("is-hidden", nextScreen !== "7");
 
   if (nextScreen === "0") drawGalaxyScene();
   if (nextScreen === "1") drawStarScene();
@@ -1391,7 +1509,8 @@ function setScreen(nextScreen) {
   if (nextScreen === "3") drawSolarScene();
   if (nextScreen === "4") drawSaturnScene();
   if (nextScreen === "5") drawEarthScene();
-  if (nextScreen === "6") drawLeoScene();
+  if (nextScreen === "6") drawSaturnRingScene();
+  if (nextScreen === "7") drawLeoScene();
   updateSideScaleLabel();
 }
 
@@ -1425,6 +1544,9 @@ function tick(frameTs) {
     updateEarthOrbits(dt);
     drawEarthScene();
   } else if (currentScreen === "6") {
+    updateSaturnRingStations(dt);
+    drawSaturnRingScene();
+  } else if (currentScreen === "7") {
     updateLeoStations(dt);
     drawLeoScene();
   }
@@ -1535,11 +1657,24 @@ leoAccelSlider.addEventListener("input", () => {
   leoAccelValue.textContent = String(leoTimeAcceleration);
 });
 
+saturnRingAccelSlider.addEventListener("input", () => {
+  const next = Number(saturnRingAccelSlider.value);
+  saturnRingTimeAcceleration = Math.max(MIN_ACCEL, Math.min(MAX_ACCEL, next));
+  saturnRingAccelValue.textContent = String(saturnRingTimeAcceleration);
+});
+
+saturnRingLanesSlider.addEventListener("input", () => {
+  const next = Number(saturnRingLanesSlider.value);
+  saturnRingLaneCount = Math.max(0, Math.min(3, next));
+  saturnRingLanesValue.textContent = String(saturnRingLaneCount);
+  if (currentScreen === "6") drawSaturnRingScene();
+});
+
 leoLanesSlider.addEventListener("input", () => {
   const next = Number(leoLanesSlider.value);
   leoLaneCount = Math.max(0, Math.min(3, next));
   leoLanesValue.textContent = String(leoLaneCount);
-  if (currentScreen === "6") drawLeoScene();
+  if (currentScreen === "7") drawLeoScene();
 });
 
 for (const button of screenButtons) {
