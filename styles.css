@@ -342,7 +342,7 @@ body {
 .local-sector-time-label {
   position: absolute;
   top: 8px;
-  left: calc(100% + 14px);
+  right: 8px;
   white-space: pre-line;
   line-height: 1.2;
   font-size: 12px;
@@ -351,7 +351,7 @@ body {
   min-width: 120px;
   padding: 6px 8px;
   border: 1px solid rgba(255, 255, 255, 0.75);
-  background: rgba(63, 101, 97, 0.35);
+  background: rgba(63, 101, 97, 0.72);
   pointer-events: none;
   z-index: 2;
 }
