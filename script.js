@@ -126,6 +126,152 @@ const leoAccelSlider = document.getElementById("leo-time-accel");
 const leoAccelValue = document.getElementById("leo-time-accel-value");
 const leoLanesSlider = document.getElementById("leo-lanes");
 const leoLanesValue = document.getElementById("leo-lanes-value");
+const shipEntries = document.getElementById("ship-entries");
+
+const shipRenderOrder = ["Worker", "Torchship", "Starship"];
+const shipDataFallback = {
+  Worker: {
+    size: "12 M",
+    name: "Deep Space Worker",
+    description:
+      "A low power 2-person tug with manipulator arms, designed for space construction and repair.",
+  },
+  Torchship: {
+    size: "235 M",
+    name: "Interplanetary Torchship",
+    description:
+      "A fully-crewed interplanetary transport with moderate defense capabilities, designed to traverse any star system with 1 g brachistochrone trajectories.",
+  },
+  Starship: {
+    size: "1.2 KM",
+    name: "Relativistic Starship",
+    description:
+      "An enormous mobile base with a relativistic shield, habitation and carrier capabilities, designed to traverse distances between stars at relativistic speeds over the course of decades.",
+  },
+};
+
+function parseShipSizeToMeters(sizeLabel) {
+  const trimmed = sizeLabel.trim().toUpperCase();
+  const match = trimmed.match(/^(\d+(?:\.\d+)?)\s*(KM|M)$/);
+  if (!match) return 0;
+  const value = Number(match[1]);
+  const unit = match[2];
+  return unit === "KM" ? value * 1000 : value;
+}
+
+function getComparisonImageConfig(smallerShipId, largerShipId) {
+  const key = `${smallerShipId}->${largerShipId}`;
+  const mipmaps = {
+    "Worker->Torchship": "WorkerInTorchshipMipMap.png",
+    "Worker->Starship": "WorkerInStarshipMipMap.png",
+    "Torchship->Starship": "TorchshipInStarshipMipMap.png",
+  };
+  const src = mipmaps[key];
+  if (src) {
+    return { src, isMipMap: true };
+  }
+  return { src: `${smallerShipId}.png`, isMipMap: false };
+}
+
+function renderShipsPanel(shipsData) {
+  if (!shipEntries) return;
+  shipEntries.textContent = "";
+
+  const orderedShips = shipRenderOrder
+    .map((id) => ({ id, ...shipsData[id] }))
+    .filter((ship) => ship.name && ship.size && ship.description);
+
+  for (let i = 0; i < orderedShips.length; i += 1) {
+    const ship = orderedShips[i];
+    const shipSizeMeters = parseShipSizeToMeters(ship.size);
+
+    const entry = document.createElement("article");
+    entry.className = "ship-entry";
+
+    const header = document.createElement("div");
+    header.className = "ship-entry-header";
+
+    const name = document.createElement("span");
+    name.className = "ship-entry-name";
+    name.textContent = ship.name;
+
+    const size = document.createElement("span");
+    size.className = "ship-entry-size";
+    size.textContent = ship.size;
+
+    const image = document.createElement("img");
+    image.className = "ship-entry-image";
+    image.src = `${ship.id}.png`;
+    image.alt = ship.name;
+
+    const description = document.createElement("p");
+    description.className = "ship-entry-description";
+    description.textContent = ship.description;
+
+    header.append(name, size);
+    entry.append(header, image, description);
+
+    if (i > 0) {
+      const comparisons = document.createElement("div");
+      comparisons.className = "ship-comparison-list";
+      if (ship.id === "Starship") {
+        comparisons.classList.add("ship-comparison-list--starship");
+      }
+      if (i === 1) {
+        comparisons.classList.add("ship-comparison-list--single");
+      }
+
+      for (let j = 0; j < i; j += 1) {
+        const smaller = orderedShips[j];
+        const smallerSizeMeters = parseShipSizeToMeters(smaller.size);
+        const ratio = shipSizeMeters > 0 ? smallerSizeMeters / shipSizeMeters : 0;
+        const clampedRatio = Math.max(0, Math.min(ratio, 1));
+
+        const comparisonRow = document.createElement("div");
+        comparisonRow.className = "ship-scale-row";
+        if (ship.id === "Starship") {
+          comparisonRow.classList.add("ship-scale-row--starship");
+        }
+
+        const comparisonImage = document.createElement("img");
+        comparisonImage.className = "ship-scale-image";
+        const comparisonImageConfig = getComparisonImageConfig(smaller.id, ship.id);
+        comparisonImage.src = comparisonImageConfig.src;
+        comparisonImage.alt = `${smaller.name} to scale`;
+        if (comparisonImageConfig.isMipMap) {
+          // Render authored mipmaps at intrinsic size to avoid stretching.
+          comparisonImage.style.width = "auto";
+        } else {
+          comparisonImage.style.width = `${Math.max(clampedRatio * 100, 0.8)}%`;
+        }
+
+        const comparisonLabel = document.createElement("span");
+        comparisonLabel.className = "ship-scale-label";
+        comparisonLabel.textContent = `${smaller.size} (to scale)`;
+
+        comparisonRow.append(comparisonImage, comparisonLabel);
+        comparisons.append(comparisonRow);
+      }
+
+      entry.append(comparisons);
+    }
+
+    shipEntries.append(entry);
+  }
+}
+
+async function loadShipsPanel() {
+  if (!shipEntries) return;
+  try {
+    const response = await fetch("ships.json");
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const shipsData = await response.json();
+    renderShipsPanel(shipsData);
+  } catch (error) {
+    // Local file:// sessions can block fetch; keep panel functional with fallback data.
+    renderShipsPanel(shipDataFallback);
+  }
+}
 
 function resetRangeInputsToDefaults() {
   const ranges = document.querySelectorAll('input[type="range"]');
@@ -1772,6 +1918,7 @@ for (const button of screenButtons) {
 
 allStations = generateAllStations();
 allSaturnStations = generateAllSaturnStations();
+loadShipsPanel();
 window.addEventListener("resize", resizeCanvases);
 window.addEventListener("resize", updateSliderIndicatorPosition);
 resizeCanvases();
