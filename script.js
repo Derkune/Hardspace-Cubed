@@ -140,7 +140,7 @@ const shipDataFallback = {
     size: "235 M",
     name: "Interplanetary Torchship",
     description:
-      "A fully-crewed interplanetary transport with moderate defense capabilities, designed to traverse any star system with 1 g brachistochrone trajectories.",
+      "A fully-crewed interplanetary transport with moderate combat capabilities, designed to traverse any star system using 1-g brachistochrone trajectories.",
   },
   Starship: {
     size: "1.2 KM",
