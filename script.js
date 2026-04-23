@@ -9,6 +9,8 @@ const GALAXY_RADIUS_LY = 200000;
 const GALAXY_SIDE_LENGTH_LY = GALAXY_RADIUS_LY * 2;
 const REFERENCE_SHIP_SPEED_LY_PER_YEAR =
   LOCAL_SECTOR_SIDE_LENGTH_LY / LOCAL_SECTOR_CROSSING_YEARS;
+const DAYS_PER_YEAR = 365.25;
+const SECONDS_PER_DAY = 86400;
 const MIN_NEIGHBORS = 0;
 const MAX_NEIGHBORS = 20;
 const MIN_ACCEL = 0;
@@ -603,8 +605,10 @@ function localSectorShipSpeedMultiplier() {
 
 function formatLocalSectorYear() {
   const year = LOCAL_SECTOR_START_YEAR + universeElapsedYears;
-  const roundedYear = Math.round(year);
-  return `Year: ${roundedYear.toLocaleString()} AD`;
+  return `Year: ${year.toLocaleString(undefined, {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
+  })} AD`;
 }
 
 function updateLocalSectorTimeLabel() {
@@ -648,6 +652,37 @@ function updateGalaxyClock(dt, size) {
   const speedPxPerSec = meanGalaxyShipSpeedPxPerSec(size) * speedMultiplier;
   const lyPerSecond = speedPxPerSec * (GALAXY_SIDE_LENGTH_LY / size);
   const yearsPerSecond = lyPerSecond / REFERENCE_SHIP_SPEED_LY_PER_YEAR;
+  universeElapsedYears += yearsPerSecond * dt;
+}
+
+function updateSolarClock(dt) {
+  if (dt <= 0) return;
+  const earth = planets.find((planet) => planet.orbitAu === 1.0);
+  if (!earth) return;
+  const earthAngularSpeed = jupiterAngularSpeed(earth.periodYears);
+  if (earthAngularSpeed <= 0) return;
+  const yearsPerSecond = (earthAngularSpeed / (Math.PI * 2)) * earth.periodYears;
+  universeElapsedYears += yearsPerSecond * dt;
+}
+
+function updateSaturnClock(dt) {
+  if (dt <= 0) return;
+  const iapetusAngular = iapetusAngularSpeed();
+  const iapetus = saturnMoons[saturnMoons.length - 1];
+  if (!iapetus || iapetusAngular <= 0) return;
+  const yearsPerSecond = (iapetusAngular / (Math.PI * 2)) * (iapetus.periodDays / DAYS_PER_YEAR);
+  universeElapsedYears += yearsPerSecond * dt;
+}
+
+function updateEarthClock(dt) {
+  if (dt <= 0) return;
+  const moonAngular = moonAngularSpeed();
+  if (moonAngular <= 0) return;
+  const moonPeriodSecondsReal = Math.PI * 2 * Math.sqrt(
+    Math.pow(EARTH_MOON_DISTANCE_KM, 3) / EARTH_MU_KM3_S2
+  );
+  const moonPeriodYearsReal = moonPeriodSecondsReal / (SECONDS_PER_DAY * DAYS_PER_YEAR);
+  const yearsPerSecond = (moonAngular / (Math.PI * 2)) * moonPeriodYearsReal;
   universeElapsedYears += yearsPerSecond * dt;
 }
 
@@ -1806,7 +1841,14 @@ function setScreen(nextScreen) {
   saturnRingCanvas.classList.toggle("is-hidden", nextScreen !== "6");
   leoCanvas.classList.toggle("is-hidden", nextScreen !== "7");
   if (localSectorTimeLabel) {
-    localSectorTimeLabel.classList.toggle("is-hidden", nextScreen !== "1" && nextScreen !== "0");
+    localSectorTimeLabel.classList.toggle(
+      "is-hidden",
+      nextScreen !== "0" &&
+        nextScreen !== "1" &&
+        nextScreen !== "3" &&
+        nextScreen !== "4" &&
+        nextScreen !== "5"
+    );
   }
 
   if (nextScreen === "0") drawGalaxyScene();
@@ -1843,14 +1885,20 @@ function tick(frameTs) {
     }
     drawProximaScene();
   } else if (currentScreen === "3") {
+    updateSolarClock(dt);
+    updateLocalSectorTimeLabel();
     for (const planet of planets) {
       planet.angle += jupiterAngularSpeed(planet.periodYears) * dt;
     }
     drawSolarScene();
   } else if (currentScreen === "4") {
+    updateSaturnClock(dt);
+    updateLocalSectorTimeLabel();
     updateSaturnOrbits(dt);
     drawSaturnScene();
   } else if (currentScreen === "5") {
+    updateEarthClock(dt);
+    updateLocalSectorTimeLabel();
     updateEarthOrbits(dt);
     drawEarthScene();
   } else if (currentScreen === "6") {
