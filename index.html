@@ -10,6 +10,7 @@
     <div class="app">
       <div class="controls">
         <div class="tab-row">
+          <button class="screen-btn" type="button" data-screen="0">Galaxy</button>
           <button class="screen-btn active" type="button" data-screen="1">Local Sector</button>
           <button class="screen-btn" type="button" data-screen="2">Solar System</button>
           <button class="screen-btn" type="button" data-screen="3">Saturn System</button>
@@ -77,6 +78,7 @@
       </div>
 
       <div class="screen-wrapper">
+        <canvas id="galaxy-canvas" class="screen-canvas is-hidden" aria-label="Galaxy screen"></canvas>
         <canvas id="star-canvas" class="screen-canvas" aria-label="Star map screen 1"></canvas>
         <canvas
           id="solar-canvas"

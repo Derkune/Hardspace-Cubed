@@ -48,6 +48,8 @@ const wrapper = document.querySelector(".screen-wrapper");
 const screenButtons = Array.from(document.querySelectorAll(".screen-btn[data-screen]"));
 const screenControls = Array.from(document.querySelectorAll(".slider-group[data-controls]"));
 
+const galaxyCanvas = document.getElementById("galaxy-canvas");
+const galaxyCtx = galaxyCanvas.getContext("2d");
 const starCanvas = document.getElementById("star-canvas");
 const starCtx = starCanvas.getContext("2d");
 const neighborsSlider = document.getElementById("neighbors");
@@ -173,6 +175,10 @@ function drawStarScene() {
 
   drawStarships();
   updateStarConnectivityIndicator(false);
+}
+
+function drawGalaxyScene() {
+  galaxyCtx.clearRect(0, 0, galaxyCanvas.width, galaxyCanvas.height);
 }
 
 function getSize() {
@@ -890,6 +896,8 @@ function updateEarthOrbits(dt) {
 
 function resizeCanvases() {
   const size = getSize();
+  galaxyCanvas.width = size;
+  galaxyCanvas.height = size;
   starCanvas.width = size;
   starCanvas.height = size;
   solarCanvas.width = size;
@@ -905,6 +913,7 @@ function resizeCanvases() {
   updateStarConnectivityIndicator(true);
   updateSideScaleLabel();
 
+  if (currentScreen === "0") drawGalaxyScene();
   if (currentScreen === "1") drawStarScene();
   if (currentScreen === "2") drawSolarScene();
   if (currentScreen === "3") drawSaturnScene();
@@ -921,11 +930,13 @@ function setScreen(nextScreen) {
     controls.classList.toggle("is-hidden", controls.dataset.controls !== nextScreen);
   }
 
+  galaxyCanvas.classList.toggle("is-hidden", nextScreen !== "0");
   starCanvas.classList.toggle("is-hidden", nextScreen !== "1");
   solarCanvas.classList.toggle("is-hidden", nextScreen !== "2");
   saturnCanvas.classList.toggle("is-hidden", nextScreen !== "3");
   earthCanvas.classList.toggle("is-hidden", nextScreen !== "4");
 
+  if (nextScreen === "0") drawGalaxyScene();
   if (nextScreen === "1") drawStarScene();
   if (nextScreen === "2") drawSolarScene();
   if (nextScreen === "3") drawSaturnScene();
