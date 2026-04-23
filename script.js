@@ -603,17 +603,26 @@ function localSectorShipSpeedMultiplier() {
   return (shipSpeedSliderValue / 2.5) * LOCAL_SECTOR_TIME_ACCEL_FACTOR;
 }
 
+function yearFractionDigitsForScreen(screen) {
+  if (screen === "6" || screen === "7") return 5;
+  if (screen === "4" || screen === "5") return 3;
+  if (screen === "2" || screen === "3") return 1;
+  return 0;
+}
+
 function formatLocalSectorYear() {
   const year = LOCAL_SECTOR_START_YEAR + universeElapsedYears;
-  return `Year: ${year.toLocaleString(undefined, {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
-  })} AD`;
+  const fractionDigits = yearFractionDigitsForScreen(currentScreen);
+  return year.toLocaleString(undefined, {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  });
 }
 
 function updateLocalSectorTimeLabel() {
   if (!localSectorTimeLabel) return;
-  localSectorTimeLabel.textContent = formatLocalSectorYear();
+  const formattedYear = formatLocalSectorYear();
+  localSectorTimeLabel.textContent = `Year:\n${formattedYear}\nAD`;
 }
 
 function updateLocalSectorClock(dt, size) {
@@ -683,6 +692,30 @@ function updateEarthClock(dt) {
   );
   const moonPeriodYearsReal = moonPeriodSecondsReal / (SECONDS_PER_DAY * DAYS_PER_YEAR);
   const yearsPerSecond = (moonAngular / (Math.PI * 2)) * moonPeriodYearsReal;
+  universeElapsedYears += yearsPerSecond * dt;
+}
+
+function updateProximaClock(dt) {
+  if (dt <= 0) return;
+  const outerPlanetAngular = proximaAngularSpeed(PROXIMA_OUTER_PLANET_PERIOD_SECONDS);
+  if (outerPlanetAngular <= 0) return;
+  const yearsPerSecond = outerPlanetAngular / (Math.PI * 2);
+  universeElapsedYears += yearsPerSecond * dt;
+}
+
+function updateSaturnRingClock(dt) {
+  if (dt <= 0) return;
+  const multiplier = (saturnRingTimeAcceleration / 5) * 1000;
+  if (multiplier <= 0) return;
+  const yearsPerSecond = multiplier / (SECONDS_PER_DAY * DAYS_PER_YEAR);
+  universeElapsedYears += yearsPerSecond * dt;
+}
+
+function updateLeoClock(dt) {
+  if (dt <= 0) return;
+  const multiplier = (leoTimeAcceleration / 5) * 100;
+  if (multiplier <= 0) return;
+  const yearsPerSecond = multiplier / (SECONDS_PER_DAY * DAYS_PER_YEAR);
   universeElapsedYears += yearsPerSecond * dt;
 }
 
@@ -1845,9 +1878,12 @@ function setScreen(nextScreen) {
       "is-hidden",
       nextScreen !== "0" &&
         nextScreen !== "1" &&
+        nextScreen !== "2" &&
         nextScreen !== "3" &&
         nextScreen !== "4" &&
-        nextScreen !== "5"
+        nextScreen !== "5" &&
+        nextScreen !== "6" &&
+        nextScreen !== "7"
     );
   }
 
@@ -1860,6 +1896,7 @@ function setScreen(nextScreen) {
   if (nextScreen === "6") drawSaturnRingScene();
   if (nextScreen === "7") drawLeoScene();
   updateSideScaleLabel();
+  updateLocalSectorTimeLabel();
 }
 
 function tick(frameTs) {
@@ -1877,6 +1914,8 @@ function tick(frameTs) {
     updateStarships(dt);
     drawStarScene();
   } else if (currentScreen === "2") {
+    updateProximaClock(dt);
+    updateLocalSectorTimeLabel();
     proximaStar3Angle += proximaAngularSpeed(PROXIMA_STAR3_PERIOD_SECONDS) * dt;
     proximaBinaryPhase += proximaAngularSpeed(PROXIMA_BINARY_PERIOD_SECONDS) * dt;
     for (let i = 0; i < proximaPlanetAngles.length; i += 1) {
@@ -1902,9 +1941,13 @@ function tick(frameTs) {
     updateEarthOrbits(dt);
     drawEarthScene();
   } else if (currentScreen === "6") {
+    updateSaturnRingClock(dt);
+    updateLocalSectorTimeLabel();
     updateSaturnRingStations(dt);
     drawSaturnRingScene();
   } else if (currentScreen === "7") {
+    updateLeoClock(dt);
+    updateLocalSectorTimeLabel();
     updateLeoStations(dt);
     drawLeoScene();
   }
