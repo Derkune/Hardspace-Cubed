@@ -1094,29 +1094,34 @@ function updateGalaxyShips(dt) {
   if (speedMultiplier <= 0) return;
 
   const size = galaxyCanvas.width;
-  for (const ship of galaxyShips) {
-    const dx = ship.destX - ship.x;
-    const dy = ship.destY - ship.y;
-    const dist = Math.hypot(dx, dy);
-    const step = ship.speedPxPerSec * speedMultiplier * dt;
+  const microStepCount = 10;
+  const microDt = dt / microStepCount;
 
-    if (dist <= step || dist < 0.0001) {
-      ship.x = ship.destX;
-      ship.y = ship.destY;
-      ship.path.push({ x: ship.x, y: ship.y });
-      if (ship.path.length > GALAXY_TRAIL_STEPS) {
-        ship.path.shift();
+  for (let microStep = 0; microStep < microStepCount; microStep += 1) {
+    for (const ship of galaxyShips) {
+      const dx = ship.destX - ship.x;
+      const dy = ship.destY - ship.y;
+      const dist = Math.hypot(dx, dy);
+      const step = ship.speedPxPerSec * speedMultiplier * microDt;
+
+      if (dist <= step || dist < 0.0001) {
+        ship.x = ship.destX;
+        ship.y = ship.destY;
+        ship.path.push({ x: ship.x, y: ship.y });
+        if (ship.path.length > GALAXY_TRAIL_STEPS) {
+          ship.path.shift();
+        }
+        const next = pickNextGalaxyDestination(ship, size);
+        ship.destX = next.x;
+        ship.destY = next.y;
+        continue;
       }
-      const next = pickNextGalaxyDestination(ship, size);
-      ship.destX = next.x;
-      ship.destY = next.y;
-      continue;
-    }
 
-    const ux = dx / dist;
-    const uy = dy / dist;
-    ship.x += ux * step;
-    ship.y += uy * step;
+      const ux = dx / dist;
+      const uy = dy / dist;
+      ship.x += ux * step;
+      ship.y += uy * step;
+    }
   }
 }
 
