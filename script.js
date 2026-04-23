@@ -1,4 +1,6 @@
 const GRID_SIZE = 25;
+const LOCAL_SECTOR_EXTRA_GRID_LAYERS = 1;
+const LOCAL_SECTOR_TIME_ACCEL_FACTOR = 2;
 const MIN_NEIGHBORS = 0;
 const MAX_NEIGHBORS = 20;
 const MIN_ACCEL = 0;
@@ -166,6 +168,7 @@ let galaxyTimeAcceleration = Number(galaxyAccelSlider.value);
 let galaxyVisibleShipCount = Number(galaxyShipCountSlider.value);
 let galaxyShips = [];
 let points = [];
+let localSectorLinePoints = [];
 let closestFiveStars = [];
 let allStarships = [];
 let neighborsToDraw = Number(neighborsSlider.value);
@@ -210,13 +213,13 @@ function randomInt(max) {
   return Math.floor(Math.random() * max);
 }
 
-function buildPoints(width, height) {
+function buildPoints(width, height, extraLayers = 0) {
   const cellW = width / GRID_SIZE;
   const cellH = height / GRID_SIZE;
   const created = [];
 
-  for (let row = 0; row < GRID_SIZE; row += 1) {
-    for (let col = 0; col < GRID_SIZE; col += 1) {
+  for (let row = -extraLayers; row < GRID_SIZE + extraLayers; row += 1) {
+    for (let col = -extraLayers; col < GRID_SIZE + extraLayers; col += 1) {
       const baseX = col * cellW;
       const baseY = row * cellH;
       created.push({
@@ -227,6 +230,10 @@ function buildPoints(width, height) {
   }
 
   return created;
+}
+
+function pointIsVisibleInSquare(point, width, height) {
+  return point.x >= 0 && point.x <= width && point.y >= 0 && point.y <= height;
 }
 
 function distanceSquared(a, b) {
@@ -265,7 +272,12 @@ function drawNearestLines(ctx, bodies, connections) {
 
 function drawStarScene() {
   starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
-  drawNearestLines(starCtx, points, neighborsToDraw);
+  starCtx.save();
+  starCtx.beginPath();
+  starCtx.rect(0, 0, starCanvas.width, starCanvas.height);
+  starCtx.clip();
+  drawNearestLines(starCtx, localSectorLinePoints, neighborsToDraw);
+  starCtx.restore();
 
   starCtx.fillStyle = "rgb(255, 255, 255)";
   for (const point of points) {
@@ -959,7 +971,7 @@ function generateAllStarships(width, height) {
 }
 
 function updateStarships(dt) {
-  const shipSpeedMultiplier = shipSpeedSliderValue / 2.5;
+  const shipSpeedMultiplier = (shipSpeedSliderValue / 2.5) * LOCAL_SECTOR_TIME_ACCEL_FACTOR;
 
   for (const ship of allStarships) {
     const target = points[ship.targetStarIndex];
@@ -1479,7 +1491,8 @@ function resizeCanvases() {
   leoCanvas.height = size;
   earthCanvas.width = size;
   earthCanvas.height = size;
-  points = buildPoints(size, size);
+  localSectorLinePoints = buildPoints(size, size, LOCAL_SECTOR_EXTRA_GRID_LAYERS);
+  points = localSectorLinePoints.filter((point) => pointIsVisibleInSquare(point, size, size));
   closestFiveStars = computeClosestStars(5);
   allStarships = generateAllStarships(size, size);
   saturnRingStations = generateSaturnRingStations(size);
