@@ -1509,22 +1509,83 @@ function makeSaturnEllipticalStation() {
   };
 }
 
+function saturnMoonStationSpaceLimits() {
+  const moonCount = saturnMoons.length;
+  if (moonCount === 0) return [];
+
+  const spaces = new Array(moonCount).fill(0);
+  // drawSaturnScene keeps Iapetus at center - size / 20 with scale center / 2.
+  const edgeMarginKm = SATURN_IAPETUS_RADIUS_KM * ((1 / 20) / ((1 / 2) - (1 / 20)));
+
+  for (let i = 0; i < moonCount; i += 1) {
+    if (i === moonCount - 1) {
+      spaces[i] = edgeMarginKm;
+      continue;
+    }
+
+    let closestNeighborDistance = Number.POSITIVE_INFINITY;
+    if (i > 0) {
+      closestNeighborDistance = Math.min(
+        closestNeighborDistance,
+        Math.abs(saturnMoons[i].orbitKm - saturnMoons[i - 1].orbitKm)
+      );
+    }
+    if (i + 1 < moonCount) {
+      closestNeighborDistance = Math.min(
+        closestNeighborDistance,
+        Math.abs(saturnMoons[i + 1].orbitKm - saturnMoons[i].orbitKm)
+      );
+    }
+
+    spaces[i] = Number.isFinite(closestNeighborDistance) ? closestNeighborDistance * 0.5 : 0;
+  }
+
+  return spaces;
+}
+
+function distributeStationsByWeights(totalCount, weights) {
+  if (totalCount <= 0 || weights.length === 0) return new Array(weights.length).fill(0);
+
+  const safeWeights = weights.map((w) => Math.max(0, w));
+  const totalWeight = safeWeights.reduce((sum, value) => sum + value, 0);
+  if (totalWeight <= 0) return new Array(weights.length).fill(0);
+
+  const allocations = safeWeights.map((weight) => Math.floor((weight / totalWeight) * totalCount));
+  let assigned = allocations.reduce((sum, value) => sum + value, 0);
+
+  const remainders = safeWeights
+    .map((weight, index) => ({
+      index,
+      remainder: (weight / totalWeight) * totalCount - allocations[index],
+    }))
+    .sort((a, b) => b.remainder - a.remainder);
+
+  for (let i = 0; assigned < totalCount && i < remainders.length; i += 1) {
+    allocations[remainders[i].index] += 1;
+    assigned += 1;
+  }
+
+  return allocations;
+}
+
 function generateSaturnStations(count) {
   const generated = [];
   const circularCount = Math.round(count * 0.7);
   const ellipticalCount = count - circularCount;
-  const hostCount = 8;
-  const basePerHost = Math.floor(circularCount / hostCount);
-  const remainder = circularCount % hostCount;
+  const moonSpaceLimits = saturnMoonStationSpaceLimits();
+  const perMoonCounts = distributeStationsByWeights(circularCount, moonSpaceLimits);
 
-  for (let host = 0; host < hostCount; host += 1) {
-    const perHostCount = basePerHost + (host < remainder ? 1 : 0);
-    for (let i = 0; i < perHostCount; i += 1) {
-      if (host === 0) {
-        generated.push(makeSaturnCircularStation("saturn", -1));
+  for (let moonIndex = 0; moonIndex < saturnMoons.length; moonIndex += 1) {
+    const perMoonCount = perMoonCounts[moonIndex];
+    const maxOrbitRadius = moonSpaceLimits[moonIndex];
+    for (let i = 0; i < perMoonCount; i += 1) {
+      const station = makeSaturnCircularStation("moon", moonIndex);
+      if (perMoonCount > 0 && maxOrbitRadius > 0) {
+        station.radiusKm = maxOrbitRadius * ((i + 1) / (perMoonCount + 1));
       } else {
-        generated.push(makeSaturnCircularStation("moon", host - 1));
+        station.radiusKm = 0;
       }
+      generated.push(station);
     }
   }
 
