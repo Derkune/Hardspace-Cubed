@@ -32,8 +32,8 @@ def transform_grayscale_to_transparent(input_path, output_path):
 
 
 # --- Configuration ---
-input_file = "your_image.jpg"  # Replace with your filename
-output_file = "transformed_image.png"
+input_file = "galaxy.png"  # Replace with your filename
+output_file = "transformed_galaxy.png"
 
 if __name__ == "__main__":
     if os.path.exists(input_file):
