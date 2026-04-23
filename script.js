@@ -29,7 +29,7 @@ const LEO_TOTAL_STATIONS = 4000;
 const LEO_THETA_EDGE = 0.18;
 const LEO_EARTH_CENTER_Y_FACTOR = 3.42;
 const LEO_EARTH_RADIUS_FACTOR = 2.6;
-const SATURN_RING_TOTAL_STATIONS = 1000;
+const SATURN_RING_TOTAL_STATIONS = 500;
 const SATURN_RING_THETA_EDGE = 0.1;
 const SATURN_RING_CENTER_Y_FACTOR = 1.0;
 const SATURN_RING_RADIUS_FACTOR = 0.52;
@@ -605,12 +605,13 @@ function drawSaturnRingScene() {
 
   const saturn = saturnRingGeometry(size);
   const leftY = saturnRingSurfaceY(size, 0);
-  const centerY = saturnRingSurfaceY(size, size / 2);
   const rightY = saturnRingSurfaceY(size, size);
+  const leftAngle = Math.atan2(leftY - saturn.cy, 0 - saturn.cx);
+  const rightAngle = Math.atan2(rightY - saturn.cy, size - saturn.cx);
   saturnRingCtx.beginPath();
   saturnRingCtx.moveTo(0, size);
   saturnRingCtx.lineTo(0, leftY);
-  saturnRingCtx.quadraticCurveTo(saturn.cx, centerY, size, rightY);
+  saturnRingCtx.arc(saturn.cx, saturn.cy, saturn.radius, leftAngle, rightAngle, false);
   saturnRingCtx.lineTo(size, size);
   saturnRingCtx.closePath();
   saturnRingCtx.fillStyle = "rgba(255, 255, 255, 0.95)";
