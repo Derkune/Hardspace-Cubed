@@ -134,13 +134,13 @@ const shipDataFallback = {
     size: "12 M",
     name: "Deep Space Worker",
     description:
-      "A low power 2-person tug with manipulator arms, designed for space construction and repair.",
+      "A low-power small-crew tug with manipulator arms, designed for space construction and repair.",
   },
   Torchship: {
     size: "235 M",
     name: "Interplanetary Torchship",
     description:
-      "A fully-crewed interplanetary transport with moderate combat capabilities, designed to traverse any star system using 1-g brachistochrone trajectories.",
+      "A full-complement interplanetary transport with moderate combat capabilities, designed to traverse any star system using 1-g brachistochrone trajectories.",
   },
   Starship: {
     size: "1.2 KM",
