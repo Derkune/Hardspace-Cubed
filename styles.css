@@ -146,6 +146,13 @@ body {
   width: 100%;
 }
 
+.app-title {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: 0.4px;
+  text-align: center;
+}
+
 .controls {
   width: min(92%, 760px);
   display: flex;
@@ -173,13 +180,16 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 30px;
-  line-height: 1;
-  white-space: nowrap;
+  width: 84px;
+  height: 46px;
+  line-height: 1.15;
+  white-space: normal;
+  text-align: center;
   border: 1px solid var(--fg);
   background: transparent;
   color: var(--fg);
-  padding: 8px 12px;
+  padding: 4px 6px;
+  font-size: 11px;
   cursor: pointer;
 }
 
