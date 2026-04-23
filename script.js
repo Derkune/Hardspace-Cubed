@@ -38,11 +38,13 @@ const BASE_IAPETUS_PERIOD_SECONDS = 60;
 const BASE_IAPETUS_ACCEL = 5;
 const GALAXY_TRAIL_STEPS = 1000;
 const GALAXY_DESTINATION_STEP_FACTOR = 300;
-const LEO_TOTAL_STATIONS = 4000;
+const LEO_BASE_TOTAL_STATIONS = 4000;
+const LEO_TOTAL_STATIONS = LEO_BASE_TOTAL_STATIONS * 2;
 const LEO_THETA_EDGE = 0.18;
 const LEO_EARTH_CENTER_Y_FACTOR = 3.42;
 const LEO_EARTH_RADIUS_FACTOR = 2.6;
-const SATURN_RING_TOTAL_STATIONS = 500;
+const SATURN_RING_BASE_TOTAL_STATIONS = 500;
+const SATURN_RING_TOTAL_STATIONS = SATURN_RING_BASE_TOTAL_STATIONS * 2;
 const SATURN_RING_THETA_EDGE = 0.1;
 const SATURN_RING_CENTER_Y_FACTOR = 1.0;
 const SATURN_RING_RADIUS_FACTOR = 0.52;
@@ -133,10 +135,14 @@ const saturnRingAccelSlider = document.getElementById("saturn-ring-time-accel");
 const saturnRingAccelValue = document.getElementById("saturn-ring-time-accel-value");
 const saturnRingLanesSlider = document.getElementById("saturn-ring-lanes");
 const saturnRingLanesValue = document.getElementById("saturn-ring-lanes-value");
+const saturnRingColonicationSlider = document.getElementById("saturn-ring-colonication");
+const saturnRingColonicationValue = document.getElementById("saturn-ring-colonication-value");
 const leoAccelSlider = document.getElementById("leo-time-accel");
 const leoAccelValue = document.getElementById("leo-time-accel-value");
 const leoLanesSlider = document.getElementById("leo-lanes");
 const leoLanesValue = document.getElementById("leo-lanes-value");
+const leoColonicationSlider = document.getElementById("leo-colonication");
+const leoColonicationValue = document.getElementById("leo-colonication-value");
 const localSectorTimeLabel = document.getElementById("local-sector-time-label");
 const shipEntries = document.getElementById("ship-entries");
 
@@ -309,8 +315,10 @@ function syncRangeOutputLabels() {
     [stationCountSlider, stationCountValue],
     [saturnRingAccelSlider, saturnRingAccelValue],
     [saturnRingLanesSlider, saturnRingLanesValue],
+    [saturnRingColonicationSlider, saturnRingColonicationValue],
     [leoAccelSlider, leoAccelValue],
     [leoLanesSlider, leoLanesValue],
+    [leoColonicationSlider, leoColonicationValue],
   ];
 
   for (const [input, output] of pairs) {
@@ -353,9 +361,11 @@ let saturnStationCount = Number(saturnStationCountSlider.value);
 let allSaturnStations = [];
 let saturnRingTimeAcceleration = Number(saturnRingAccelSlider.value);
 let saturnRingLaneCount = Number(saturnRingLanesSlider.value);
+let saturnRingColonicationPercent = Number(saturnRingColonicationSlider.value);
 let saturnRingStations = [];
 let leoTimeAcceleration = Number(leoAccelSlider.value);
 let leoLaneCount = Number(leoLanesSlider.value);
+let leoColonicationPercent = Number(leoColonicationSlider.value);
 let leoStations = [];
 let universeElapsedYears = 0;
 let lastFrameTs = performance.now();
@@ -372,6 +382,10 @@ function randomInRange(min, max) {
 
 function randomInt(max) {
   return Math.floor(Math.random() * max);
+}
+
+function colonicationRatio(percent) {
+  return Math.max(0, Math.min(100, percent)) / 100;
 }
 
 function buildPoints(width, height, extraLayers = 0) {
@@ -808,7 +822,7 @@ function leoStationPosition(station, size) {
 function generateLeoStations(size) {
   const generated = [];
   for (let i = 0; i < LEO_TOTAL_STATIONS; i += 1) {
-    const station = { radius: 0, theta: 0 };
+    const station = { radius: 0, theta: 0, colonicationSeed: Math.random() };
     resetLeoStation(station, size);
     const spread = (i / LEO_TOTAL_STATIONS) * (Math.PI - 2 * LEO_THETA_EDGE);
     station.theta = Math.min(-LEO_THETA_EDGE, station.theta + spread);
@@ -839,7 +853,9 @@ function updateLeoStations(dt) {
 
 function getVisibleLeoStations(size) {
   const visible = [];
+  const ratio = colonicationRatio(leoColonicationPercent);
   for (const station of leoStations) {
+    if (station.colonicationSeed > ratio) continue;
     const pos = leoStationPosition(station, size);
     if (pos.x < 0 || pos.x > size || pos.y < 0 || pos.y > size) continue;
     const horizonY = leoEarthHorizonY(size, pos.x);
@@ -909,7 +925,7 @@ function saturnRingStationPosition(station, size) {
 function generateSaturnRingStations(size) {
   const generated = [];
   for (let i = 0; i < SATURN_RING_TOTAL_STATIONS; i += 1) {
-    const station = { radius: 0, theta: 0 };
+    const station = { radius: 0, theta: 0, colonicationSeed: Math.random() };
     resetSaturnRingStation(station, size);
     const spread = (i / SATURN_RING_TOTAL_STATIONS) * (Math.PI - 2 * SATURN_RING_THETA_EDGE);
     station.theta = Math.min(-SATURN_RING_THETA_EDGE, station.theta + spread);
@@ -935,7 +951,9 @@ function updateSaturnRingStations(dt) {
 
 function getVisibleSaturnRingStations(size) {
   const visible = [];
+  const ratio = colonicationRatio(saturnRingColonicationPercent);
   for (const station of saturnRingStations) {
+    if (station.colonicationSeed > ratio) continue;
     const pos = saturnRingStationPosition(station, size);
     if (pos.x < 0 || pos.x > size || pos.y < 0 || pos.y > size) continue;
     const surfaceY = saturnRingSurfaceY(size, pos.x);
@@ -2069,15 +2087,29 @@ saturnRingAccelSlider.addEventListener("input", () => {
 
 saturnRingLanesSlider.addEventListener("input", () => {
   const next = Number(saturnRingLanesSlider.value);
-  saturnRingLaneCount = Math.max(0, Math.min(3, next));
+  saturnRingLaneCount = Math.max(0, Math.min(5, next));
   saturnRingLanesValue.textContent = String(saturnRingLaneCount);
   if (currentScreen === "6") drawSaturnRingScene();
 });
 
 leoLanesSlider.addEventListener("input", () => {
   const next = Number(leoLanesSlider.value);
-  leoLaneCount = Math.max(0, Math.min(3, next));
+  leoLaneCount = Math.max(0, Math.min(5, next));
   leoLanesValue.textContent = String(leoLaneCount);
+  if (currentScreen === "7") drawLeoScene();
+});
+
+saturnRingColonicationSlider.addEventListener("input", () => {
+  const next = Number(saturnRingColonicationSlider.value);
+  saturnRingColonicationPercent = Math.max(0, Math.min(100, next));
+  saturnRingColonicationValue.textContent = String(saturnRingColonicationPercent);
+  if (currentScreen === "6") drawSaturnRingScene();
+});
+
+leoColonicationSlider.addEventListener("input", () => {
+  const next = Number(leoColonicationSlider.value);
+  leoColonicationPercent = Math.max(0, Math.min(100, next));
+  leoColonicationValue.textContent = String(leoColonicationPercent);
   if (currentScreen === "7") drawLeoScene();
 });
 
