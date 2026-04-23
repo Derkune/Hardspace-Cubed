@@ -321,7 +321,7 @@ function syncRangeOutputLabels() {
 resetRangeInputsToDefaults();
 syncRangeOutputLabels();
 
-let currentScreen = "1";
+let currentScreen = "7";
 let galaxyTimeAcceleration = Number(galaxyAccelSlider.value);
 let galaxyVisibleShipCount = Number(galaxyShipCountSlider.value);
 let galaxyShips = [];
@@ -2095,6 +2095,6 @@ loadShipsPanel();
 window.addEventListener("resize", resizeCanvases);
 window.addEventListener("resize", updateSliderIndicatorPosition);
 resizeCanvases();
-setScreen("0");
+setScreen("7");
 updateLocalSectorTimeLabel();
 requestAnimationFrame(tick);
