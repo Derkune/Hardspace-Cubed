@@ -112,6 +112,40 @@ const leoAccelValue = document.getElementById("leo-time-accel-value");
 const leoLanesSlider = document.getElementById("leo-lanes");
 const leoLanesValue = document.getElementById("leo-lanes-value");
 
+function resetRangeInputsToDefaults() {
+  const ranges = document.querySelectorAll('input[type="range"]');
+  for (const range of ranges) {
+    range.value = range.defaultValue;
+  }
+}
+
+function syncRangeOutputLabels() {
+  const pairs = [
+    [galaxyAccelSlider, galaxyAccelValue],
+    [galaxyShipCountSlider, galaxyShipCountValue],
+    [neighborsSlider, neighborsValue],
+    [shipCountSlider, shipCountValue],
+    [shipSpeedSlider, shipSpeedValue],
+    [proximaAccelSlider, proximaAccelValue],
+    [proximaNeighborsSlider, proximaNeighborsValue],
+    [accelSlider, accelValue],
+    [solarNeighborsSlider, solarNeighborsValue],
+    [saturnAccelSlider, saturnAccelValue],
+    [saturnStationCountSlider, saturnStationCountValue],
+    [earthAccelSlider, earthAccelValue],
+    [stationCountSlider, stationCountValue],
+    [leoAccelSlider, leoAccelValue],
+    [leoLanesSlider, leoLanesValue],
+  ];
+
+  for (const [input, output] of pairs) {
+    output.textContent = input.value;
+  }
+}
+
+resetRangeInputsToDefaults();
+syncRangeOutputLabels();
+
 let currentScreen = "1";
 let galaxyTimeAcceleration = Number(galaxyAccelSlider.value);
 let galaxyVisibleShipCount = Number(galaxyShipCountSlider.value);
