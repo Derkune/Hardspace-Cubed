@@ -34,6 +34,8 @@ const SATURN_RING_THETA_EDGE = 0.1;
 const SATURN_RING_CENTER_Y_FACTOR = 1.0;
 const SATURN_RING_RADIUS_FACTOR = 0.52;
 const SATURN_RADIUS_KM = 58232;
+const EARTH_MU_KM3_S2 = 398600.4418;
+const SATURN_MU_KM3_S2 = 37931207.8;
 const PROXIMA_MARGIN_FACTOR = 1 / 20;
 const PROXIMA_BINARY_ORBIT_FACTOR = 0.035;
 const PROXIMA_STAR3_ORBIT_FACTOR = 0.37;
@@ -450,7 +452,6 @@ function resetLeoStation(station, size) {
   const earth = leoEarthGeometry(size);
   station.radius = earth.radius * randomInRange(1.02, 1.52);
   station.theta = randomInRange(-Math.PI + LEO_THETA_EDGE, -Math.PI + 0.45);
-  station.omegaBase = randomInRange(0.035, 0.09);
 }
 
 function leoStationPosition(station, size) {
@@ -464,7 +465,7 @@ function leoStationPosition(station, size) {
 function generateLeoStations(size) {
   const generated = [];
   for (let i = 0; i < LEO_TOTAL_STATIONS; i += 1) {
-    const station = { radius: 0, theta: 0, omegaBase: 0 };
+    const station = { radius: 0, theta: 0 };
     resetLeoStation(station, size);
     const spread = (i / LEO_TOTAL_STATIONS) * (Math.PI - 2 * LEO_THETA_EDGE);
     station.theta = Math.min(-LEO_THETA_EDGE, station.theta + spread);
@@ -473,11 +474,20 @@ function generateLeoStations(size) {
   return generated;
 }
 
+function keplerAngularSpeed(muKm3S2, radiusKm) {
+  if (muKm3S2 <= 0 || radiusKm <= 0) return 0;
+  return Math.sqrt(muKm3S2 / Math.pow(radiusKm, 3));
+}
+
 function updateLeoStations(dt) {
-  const multiplier = leoTimeAcceleration / 5;
+  const multiplier = (leoTimeAcceleration / 5) * 100;
   const size = leoCanvas.width;
+  const earth = leoEarthGeometry(size);
+  const pxToKm = EARTH_RADIUS_KM / earth.radius;
   for (const station of leoStations) {
-    station.theta += station.omegaBase * multiplier * dt;
+    const radiusKm = station.radius * pxToKm;
+    const angularSpeed = keplerAngularSpeed(EARTH_MU_KM3_S2, radiusKm);
+    station.theta += angularSpeed * multiplier * dt;
     if (station.theta > -LEO_THETA_EDGE) {
       resetLeoStation(station, size);
     }
@@ -543,7 +553,6 @@ function resetSaturnRingStation(station, size) {
   const saturn = saturnRingGeometry(size);
   station.radius = saturn.radius * randomInRange(1.02, 1.98);
   station.theta = randomInRange(-Math.PI + SATURN_RING_THETA_EDGE, -Math.PI + 0.45);
-  station.omegaBase = randomInRange(0.028, 0.07);
 }
 
 function saturnRingStationPosition(station, size) {
@@ -557,7 +566,7 @@ function saturnRingStationPosition(station, size) {
 function generateSaturnRingStations(size) {
   const generated = [];
   for (let i = 0; i < SATURN_RING_TOTAL_STATIONS; i += 1) {
-    const station = { radius: 0, theta: 0, omegaBase: 0 };
+    const station = { radius: 0, theta: 0 };
     resetSaturnRingStation(station, size);
     const spread = (i / SATURN_RING_TOTAL_STATIONS) * (Math.PI - 2 * SATURN_RING_THETA_EDGE);
     station.theta = Math.min(-SATURN_RING_THETA_EDGE, station.theta + spread);
@@ -567,10 +576,14 @@ function generateSaturnRingStations(size) {
 }
 
 function updateSaturnRingStations(dt) {
-  const multiplier = saturnRingTimeAcceleration / 5;
+  const multiplier = (saturnRingTimeAcceleration / 5) * 1000;
   const size = saturnRingCanvas.width;
+  const saturn = saturnRingGeometry(size);
+  const pxToKm = SATURN_RADIUS_KM / saturn.radius;
   for (const station of saturnRingStations) {
-    station.theta += station.omegaBase * multiplier * dt;
+    const radiusKm = station.radius * pxToKm;
+    const angularSpeed = keplerAngularSpeed(SATURN_MU_KM3_S2, radiusKm);
+    station.theta += angularSpeed * multiplier * dt;
     if (station.theta > -SATURN_RING_THETA_EDGE) {
       resetSaturnRingStation(station, size);
     }
