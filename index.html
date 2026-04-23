@@ -10,15 +10,27 @@
     <div class="app">
       <div class="controls">
         <div class="tab-row">
-          <button class="screen-btn" type="button" data-screen="0">Galaxy</button>
-          <button class="screen-btn active" type="button" data-screen="1">Local Sector</button>
+          <button class="screen-btn active" type="button" data-screen="0">Galaxy</button>
+          <button class="screen-btn" type="button" data-screen="1">Local Sector</button>
           <button class="screen-btn" type="button" data-screen="2">Solar System</button>
           <button class="screen-btn" type="button" data-screen="3">Saturn System</button>
           <button class="screen-btn" type="button" data-screen="4">Cislunar Space</button>
         </div>
 
         <div class="slider-row">
-          <label class="slider-group" for="neighbors" data-controls="1">
+          <label class="slider-group" for="galaxy-time-accel" data-controls="0">
+            <span>Time acceleration:</span>
+            <input id="galaxy-time-accel" type="range" min="0" max="20" value="5" />
+            <output id="galaxy-time-accel-value" for="galaxy-time-accel">5</output>
+          </label>
+
+          <label class="slider-group" for="galaxy-ship-count" data-controls="0">
+            <span>Ships:</span>
+            <input id="galaxy-ship-count" type="range" min="0" max="200" value="100" />
+            <output id="galaxy-ship-count-value" for="galaxy-ship-count">100</output>
+          </label>
+
+          <label class="slider-group is-hidden" for="neighbors" data-controls="1">
             <span>Star lanes:</span>
             <span class="slider-with-indicator">
               <input id="neighbors" type="range" min="0" max="20" value="6" />
@@ -27,13 +39,13 @@
             <output id="neighbors-value" for="neighbors">6</output>
           </label>
 
-          <label class="slider-group" for="ship-count" data-controls="1">
+          <label class="slider-group is-hidden" for="ship-count" data-controls="1">
             <span>Ships:</span>
             <input id="ship-count" type="range" min="0" max="200" value="100" />
             <output id="ship-count-value" for="ship-count">100</output>
           </label>
 
-          <label class="slider-group" for="ship-speed" data-controls="1">
+          <label class="slider-group is-hidden" for="ship-speed" data-controls="1">
             <span>Time acceleration:</span>
             <input id="ship-speed" type="range" min="0" max="10" value="5" />
             <output id="ship-speed-value" for="ship-speed">5</output>

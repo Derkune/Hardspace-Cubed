@@ -22,6 +22,7 @@ const BASE_MOON_ACCEL = 5;
 const SATURN_IAPETUS_RADIUS_KM = 3560820;
 const BASE_IAPETUS_PERIOD_SECONDS = 60;
 const BASE_IAPETUS_ACCEL = 5;
+const GALAXY_TRAIL_STEPS = 20;
 
 const saturnMoons = [
   { name: "Mimas", orbitKm: 185539, periodDays: 0.942, angle: Math.random() * Math.PI * 2 },
@@ -50,6 +51,10 @@ const screenControls = Array.from(document.querySelectorAll(".slider-group[data-
 
 const galaxyCanvas = document.getElementById("galaxy-canvas");
 const galaxyCtx = galaxyCanvas.getContext("2d");
+const galaxyAccelSlider = document.getElementById("galaxy-time-accel");
+const galaxyAccelValue = document.getElementById("galaxy-time-accel-value");
+const galaxyShipCountSlider = document.getElementById("galaxy-ship-count");
+const galaxyShipCountValue = document.getElementById("galaxy-ship-count-value");
 const starCanvas = document.getElementById("star-canvas");
 const starCtx = starCanvas.getContext("2d");
 const neighborsSlider = document.getElementById("neighbors");
@@ -82,6 +87,9 @@ const saturnStationCountValue = document.getElementById("saturn-station-count-va
 const sideScaleLabel = document.getElementById("side-scale-label");
 
 let currentScreen = "1";
+let galaxyTimeAcceleration = Number(galaxyAccelSlider.value);
+let galaxyVisibleShipCount = Number(galaxyShipCountSlider.value);
+let galaxyShips = [];
 let points = [];
 let closestFiveStars = [];
 let allStarships = [];
@@ -100,6 +108,8 @@ let allSaturnStations = [];
 let lastFrameTs = performance.now();
 let starConnectivityDirty = true;
 let starConnectivityState = false;
+const galaxyImage = new Image();
+galaxyImage.src = "transformed_galaxy.png";
 
 function randomInRange(min, max) {
   return min + Math.random() * (max - min);
@@ -178,7 +188,47 @@ function drawStarScene() {
 }
 
 function drawGalaxyScene() {
-  galaxyCtx.clearRect(0, 0, galaxyCanvas.width, galaxyCanvas.height);
+  const size = galaxyCanvas.width;
+  const center = size / 2;
+  const globalRadius = (size * 3) / 8;
+
+  galaxyCtx.clearRect(0, 0, size, size);
+
+  if (galaxyImage.complete && galaxyImage.naturalWidth > 0) {
+    galaxyCtx.drawImage(galaxyImage, 0, 0, size, size);
+  }
+
+  galaxyCtx.save();
+  galaxyCtx.beginPath();
+  galaxyCtx.arc(center, center, globalRadius, 0, Math.PI * 2);
+  galaxyCtx.clip();
+
+  galaxyCtx.strokeStyle = "rgba(255, 255, 255, 0.36)";
+  galaxyCtx.fillStyle = "rgba(255, 255, 255, 0.86)";
+  galaxyCtx.lineWidth = 1;
+
+  const visibleCount = Math.min(galaxyVisibleShipCount, galaxyShips.length);
+  for (let i = 0; i < visibleCount; i += 1) {
+    const ship = galaxyShips[i];
+    const pathPoints = ship.path.concat([{ x: ship.x, y: ship.y }]);
+
+    if (pathPoints.length > 1) {
+      galaxyCtx.beginPath();
+      galaxyCtx.moveTo(pathPoints[0].x, pathPoints[0].y);
+      for (let p = 1; p < pathPoints.length; p += 1) {
+        galaxyCtx.lineTo(pathPoints[p].x, pathPoints[p].y);
+      }
+      galaxyCtx.stroke();
+    }
+
+    for (const point of pathPoints) {
+      galaxyCtx.beginPath();
+      galaxyCtx.arc(point.x, point.y, 1.7, 0, Math.PI * 2);
+      galaxyCtx.fill();
+    }
+  }
+
+  galaxyCtx.restore();
 }
 
 function getSize() {
@@ -340,6 +390,92 @@ function updateStarConnectivityIndicator(force) {
     : "Disconnected";
   neighborsConnectivity.classList.toggle("is-connected", starConnectivityState);
   updateSliderIndicatorPosition();
+}
+
+function pointWithinGlobalGalaxyRadius(x, y, size) {
+  const center = size / 2;
+  const globalRadius = (size * 3) / 8;
+  const dx = x - center;
+  const dy = y - center;
+  return dx * dx + dy * dy <= globalRadius * globalRadius;
+}
+
+function randomGalaxyPointInGlobalRadius(size) {
+  const center = size / 2;
+  const globalRadius = (size * 3) / 8;
+  const angle = Math.random() * Math.PI * 2;
+  const radius = Math.sqrt(Math.random()) * globalRadius;
+  return {
+    x: center + Math.cos(angle) * radius,
+    y: center + Math.sin(angle) * radius,
+  };
+}
+
+function pickNextGalaxyDestination(ship, size) {
+  const localRadius = size / 30;
+
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const angle = Math.random() * Math.PI * 2;
+    const radius = Math.sqrt(Math.random()) * localRadius;
+    const x = ship.x + Math.cos(angle) * radius;
+    const y = ship.y + Math.sin(angle) * radius;
+    if (pointWithinGlobalGalaxyRadius(x, y, size)) {
+      return { x, y };
+    }
+  }
+
+  return randomGalaxyPointInGlobalRadius(size);
+}
+
+function generateGalaxyShips(size) {
+  const generated = [];
+  for (let i = 0; i < MAX_STARSHIPS; i += 1) {
+    const start = randomGalaxyPointInGlobalRadius(size);
+    const seedShip = {
+      x: start.x,
+      y: start.y,
+      destX: start.x,
+      destY: start.y,
+      speedPxPerSec: size * randomInRange(0.01, 0.03),
+      path: [{ x: start.x, y: start.y }],
+    };
+    const firstDest = pickNextGalaxyDestination(seedShip, size);
+    seedShip.destX = firstDest.x;
+    seedShip.destY = firstDest.y;
+    generated.push(seedShip);
+  }
+  return generated;
+}
+
+function updateGalaxyShips(dt) {
+  const speedMultiplier = galaxyTimeAcceleration / 5;
+  if (speedMultiplier <= 0) return;
+
+  const size = galaxyCanvas.width;
+  for (const ship of galaxyShips) {
+    const dx = ship.destX - ship.x;
+    const dy = ship.destY - ship.y;
+    const dist = Math.hypot(dx, dy);
+    const step = ship.speedPxPerSec * speedMultiplier * dt;
+
+    if (dist <= step || dist < 0.0001) {
+      ship.x = ship.destX;
+      ship.y = ship.destY;
+      ship.path.push({ x: ship.x, y: ship.y });
+      if (ship.path.length > GALAXY_TRAIL_STEPS) {
+        ship.path.shift();
+      }
+      const next = pickNextGalaxyDestination(ship, size);
+      ship.destX = next.x;
+      ship.destY = next.y;
+      continue;
+    }
+
+    const ux = dx / dist;
+    const uy = dy / dist;
+    ship.x += ux * step;
+    ship.y += uy * step;
+  }
 }
 
 function findClosestStarIndex(x, y) {
@@ -898,6 +1034,7 @@ function resizeCanvases() {
   const size = getSize();
   galaxyCanvas.width = size;
   galaxyCanvas.height = size;
+  galaxyShips = generateGalaxyShips(size);
   starCanvas.width = size;
   starCanvas.height = size;
   solarCanvas.width = size;
@@ -948,7 +1085,10 @@ function tick(frameTs) {
   const dt = Math.min((frameTs - lastFrameTs) / 1000, 0.1);
   lastFrameTs = frameTs;
 
-  if (currentScreen === "1") {
+  if (currentScreen === "0") {
+    updateGalaxyShips(dt);
+    drawGalaxyScene();
+  } else if (currentScreen === "1") {
     updateStarships(dt);
     drawStarScene();
   } else if (currentScreen === "2") {
@@ -966,6 +1106,25 @@ function tick(frameTs) {
 
   requestAnimationFrame(tick);
 }
+
+galaxyImage.addEventListener("load", () => {
+  if (currentScreen === "0") {
+    drawGalaxyScene();
+  }
+});
+
+galaxyAccelSlider.addEventListener("input", () => {
+  const next = Number(galaxyAccelSlider.value);
+  galaxyTimeAcceleration = Math.max(MIN_ACCEL, Math.min(MAX_ACCEL, next));
+  galaxyAccelValue.textContent = String(galaxyTimeAcceleration);
+});
+
+galaxyShipCountSlider.addEventListener("input", () => {
+  const next = Number(galaxyShipCountSlider.value);
+  galaxyVisibleShipCount = Math.max(MIN_STARSHIPS, Math.min(MAX_STARSHIPS, next));
+  galaxyShipCountValue.textContent = String(galaxyVisibleShipCount);
+  if (currentScreen === "0") drawGalaxyScene();
+});
 
 neighborsSlider.addEventListener("input", () => {
   const next = Number(neighborsSlider.value);
@@ -1045,5 +1204,5 @@ allSaturnStations = generateAllSaturnStations();
 window.addEventListener("resize", resizeCanvases);
 window.addEventListener("resize", updateSliderIndicatorPosition);
 resizeCanvases();
-setScreen("1");
+setScreen("0");
 requestAnimationFrame(tick);
