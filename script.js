@@ -1094,7 +1094,7 @@ function updateGalaxyShips(dt) {
   if (speedMultiplier <= 0) return;
 
   const size = galaxyCanvas.width;
-  const microStepCount = 10;
+  const microStepCount = 100;
   const microDt = dt / microStepCount;
 
   for (let microStep = 0; microStep < microStepCount; microStep += 1) {
