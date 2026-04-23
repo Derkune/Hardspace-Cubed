@@ -12,9 +12,10 @@
         <div class="tab-row">
           <button class="screen-btn active" type="button" data-screen="0">Galaxy</button>
           <button class="screen-btn" type="button" data-screen="1">Local Sector</button>
-          <button class="screen-btn" type="button" data-screen="2">Solar System</button>
-          <button class="screen-btn" type="button" data-screen="3">Saturn System</button>
-          <button class="screen-btn" type="button" data-screen="4">Cislunar Space</button>
+          <button class="screen-btn" type="button" data-screen="2">Proxima Incognito</button>
+          <button class="screen-btn" type="button" data-screen="3">Solar System</button>
+          <button class="screen-btn" type="button" data-screen="4">Saturn System</button>
+          <button class="screen-btn" type="button" data-screen="5">Cislunar Space</button>
         </div>
 
         <div class="slider-row">
@@ -51,37 +52,49 @@
             <output id="ship-speed-value" for="ship-speed">5</output>
           </label>
 
-          <label class="slider-group is-hidden" for="time-accel" data-controls="2">
+          <label class="slider-group is-hidden" for="proxima-time-accel" data-controls="2">
+            <span>Time acceleration:</span>
+            <input id="proxima-time-accel" type="range" min="0" max="20" value="5" />
+            <output id="proxima-time-accel-value" for="proxima-time-accel">5</output>
+          </label>
+
+          <label class="slider-group is-hidden" for="proxima-neighbors" data-controls="2">
+            <span>System lanes:</span>
+            <input id="proxima-neighbors" type="range" min="0" max="3" value="1" />
+            <output id="proxima-neighbors-value" for="proxima-neighbors">1</output>
+          </label>
+
+          <label class="slider-group is-hidden" for="time-accel" data-controls="3">
             <span>Time acceleration:</span>
             <input id="time-accel" type="range" min="0" max="20" value="5" />
             <output id="time-accel-value" for="time-accel">5</output>
           </label>
 
-          <label class="slider-group is-hidden" for="solar-neighbors" data-controls="2">
+          <label class="slider-group is-hidden" for="solar-neighbors" data-controls="3">
             <span>System lanes:</span>
             <input id="solar-neighbors" type="range" min="0" max="3" value="1" />
             <output id="solar-neighbors-value" for="solar-neighbors">1</output>
           </label>
 
-          <label class="slider-group is-hidden" for="saturn-time-accel" data-controls="3">
+          <label class="slider-group is-hidden" for="saturn-time-accel" data-controls="4">
             <span>Time acceleration:</span>
             <input id="saturn-time-accel" type="range" min="0" max="20" value="5" />
             <output id="saturn-time-accel-value" for="saturn-time-accel">5</output>
           </label>
 
-          <label class="slider-group is-hidden" for="saturn-station-count" data-controls="3">
+          <label class="slider-group is-hidden" for="saturn-station-count" data-controls="4">
             <span>Stations:</span>
             <input id="saturn-station-count" type="range" min="0" max="200" value="100" />
             <output id="saturn-station-count-value" for="saturn-station-count">100</output>
           </label>
 
-          <label class="slider-group is-hidden" for="earth-time-accel" data-controls="4">
+          <label class="slider-group is-hidden" for="earth-time-accel" data-controls="5">
             <span>Time acceleration:</span>
             <input id="earth-time-accel" type="range" min="0" max="20" value="5" />
             <output id="earth-time-accel-value" for="earth-time-accel">5</output>
           </label>
 
-          <label class="slider-group is-hidden" for="station-count" data-controls="4">
+          <label class="slider-group is-hidden" for="station-count" data-controls="5">
             <span>Stations:</span>
             <input id="station-count" type="range" min="0" max="200" value="100" />
             <output id="station-count-value" for="station-count">100</output>
@@ -93,19 +106,24 @@
         <canvas id="galaxy-canvas" class="screen-canvas is-hidden" aria-label="Galaxy screen"></canvas>
         <canvas id="star-canvas" class="screen-canvas" aria-label="Star map screen 1"></canvas>
         <canvas
+          id="proxima-canvas"
+          class="screen-canvas is-hidden"
+          aria-label="Proxima Incognito screen 2"
+        ></canvas>
+        <canvas
           id="solar-canvas"
           class="screen-canvas is-hidden"
-          aria-label="Solar system map screen 2"
+          aria-label="Solar system map screen 3"
         ></canvas>
         <canvas
           id="earth-canvas"
           class="screen-canvas is-hidden"
-          aria-label="Cislunar space screen 4"
+          aria-label="Cislunar space screen 5"
         ></canvas>
         <canvas
           id="saturn-canvas"
           class="screen-canvas is-hidden"
-          aria-label="Saturn system screen 3"
+          aria-label="Saturn system screen 4"
         ></canvas>
         <div class="side-scale" aria-hidden="true">
           <span class="side-scale-line"></span>

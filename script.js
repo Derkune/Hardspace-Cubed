@@ -24,6 +24,14 @@ const SATURN_IAPETUS_RADIUS_KM = 3560820;
 const BASE_IAPETUS_PERIOD_SECONDS = 60;
 const BASE_IAPETUS_ACCEL = 5;
 const GALAXY_TRAIL_STEPS = 20;
+const PROXIMA_MARGIN_FACTOR = 1 / 20;
+const PROXIMA_BINARY_ORBIT_FACTOR = 0.035;
+const PROXIMA_STAR3_ORBIT_FACTOR = 0.37;
+const PROXIMA_STAR3_PERIOD_SECONDS = 44;
+const PROXIMA_BINARY_PERIOD_SECONDS = 8;
+const PROXIMA_OUTER_PLANET_PERIOD_SECONDS = 18;
+
+const proximaPlanetPeriodFactors = [0.22, 0.45, 0.72, 1.0];
 
 const saturnMoons = [
   { name: "Mimas", orbitKm: 185539, periodDays: 0.942, angle: Math.random() * Math.PI * 2 },
@@ -72,6 +80,12 @@ const accelSlider = document.getElementById("time-accel");
 const accelValue = document.getElementById("time-accel-value");
 const solarNeighborsSlider = document.getElementById("solar-neighbors");
 const solarNeighborsValue = document.getElementById("solar-neighbors-value");
+const proximaCanvas = document.getElementById("proxima-canvas");
+const proximaCtx = proximaCanvas.getContext("2d");
+const proximaAccelSlider = document.getElementById("proxima-time-accel");
+const proximaAccelValue = document.getElementById("proxima-time-accel-value");
+const proximaNeighborsSlider = document.getElementById("proxima-neighbors");
+const proximaNeighborsValue = document.getElementById("proxima-neighbors-value");
 
 const earthCanvas = document.getElementById("earth-canvas");
 const earthCtx = earthCanvas.getContext("2d");
@@ -99,6 +113,16 @@ let visibleStarshipCount = Number(shipCountSlider.value);
 let shipSpeedSliderValue = Number(shipSpeedSlider.value);
 let timeAcceleration = Number(accelSlider.value);
 let solarNeighborsToDraw = Number(solarNeighborsSlider.value);
+let proximaTimeAcceleration = Number(proximaAccelSlider.value);
+let proximaNeighborsToDraw = Number(proximaNeighborsSlider.value);
+let proximaStar3Angle = Math.random() * Math.PI * 2;
+let proximaBinaryPhase = Math.random() * Math.PI * 2;
+let proximaPlanetAngles = [
+  Math.random() * Math.PI * 2,
+  Math.random() * Math.PI * 2,
+  Math.random() * Math.PI * 2,
+  Math.random() * Math.PI * 2,
+];
 let earthTimeAcceleration = Number(earthAccelSlider.value);
 let stationCount = Number(stationCountSlider.value);
 let allStations = [];
@@ -254,15 +278,20 @@ function currentScreenSideLengthKm() {
 
   const radiusToSideFactor = 1 / 0.45;
   if (currentScreen === "2") {
-    const sideAu = 35 * radiusToSideFactor;
+    const sideAu = 3.2 * radiusToSideFactor;
     return sideAu * ONE_AU_KM;
   }
 
   if (currentScreen === "3") {
-    return (SATURN_IAPETUS_RADIUS_KM / 0.45);
+    const sideAu = 35 * radiusToSideFactor;
+    return sideAu * ONE_AU_KM;
   }
 
   if (currentScreen === "4") {
+    return (SATURN_IAPETUS_RADIUS_KM / 0.45);
+  }
+
+  if (currentScreen === "5") {
     return 385000 * radiusToSideFactor;
   }
 
@@ -327,6 +356,100 @@ function drawSolarScene() {
     solarCtx.beginPath();
     solarCtx.arc(body.x, body.y, 3.2, 0, Math.PI * 2);
     solarCtx.fill();
+  }
+}
+
+function proximaAngularSpeed(basePeriodSeconds) {
+  if (proximaTimeAcceleration <= 0) return 0;
+  const secondsPerOrbit = basePeriodSeconds * (5 / proximaTimeAcceleration);
+  return (Math.PI * 2) / secondsPerOrbit;
+}
+
+function getProximaBodies(size) {
+  const center = size / 2;
+  const margin = size * PROXIMA_MARGIN_FACTOR;
+  const maxOrbitToEdge = center - margin;
+  const star3OrbitRadius = size * PROXIMA_STAR3_ORBIT_FACTOR;
+  const outerPlanetRadius = Math.max(0, maxOrbitToEdge - star3OrbitRadius);
+  const binaryOrbitRadius = size * PROXIMA_BINARY_ORBIT_FACTOR;
+  const star3X = center + Math.cos(proximaStar3Angle) * star3OrbitRadius;
+  const star3Y = center + Math.sin(proximaStar3Angle) * star3OrbitRadius;
+
+  const starA = {
+    x: center + Math.cos(proximaBinaryPhase) * binaryOrbitRadius,
+    y: center + Math.sin(proximaBinaryPhase) * binaryOrbitRadius,
+  };
+  const starB = {
+    x: center + Math.cos(proximaBinaryPhase + Math.PI) * binaryOrbitRadius,
+    y: center + Math.sin(proximaBinaryPhase + Math.PI) * binaryOrbitRadius,
+  };
+
+  const planetRadii = [
+    outerPlanetRadius * 0.16,
+    outerPlanetRadius * 0.30,
+    outerPlanetRadius * 0.58,
+    outerPlanetRadius,
+  ];
+  const planetsLocal = planetRadii.map((radius, i) => ({
+    radius,
+    angle: proximaPlanetAngles[i],
+  }));
+
+  const planetBodies = planetsLocal.map((planet) => ({
+    x: star3X + Math.cos(planet.angle) * planet.radius,
+    y: star3Y + Math.sin(planet.angle) * planet.radius,
+  }));
+
+  return {
+    center,
+    star3: { x: star3X, y: star3Y },
+    stars: [starA, starB],
+    planetsLocal,
+    planetBodies,
+  };
+}
+
+function drawProximaScene() {
+  const size = proximaCanvas.width;
+  const { center, star3, stars, planetsLocal, planetBodies } = getProximaBodies(size);
+
+  proximaCtx.clearRect(0, 0, size, size);
+  proximaCtx.lineWidth = 1;
+  proximaCtx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+
+  const barycenterToStar3 = Math.hypot(star3.x - center, star3.y - center);
+  proximaCtx.beginPath();
+  proximaCtx.arc(center, center, barycenterToStar3, 0, Math.PI * 2);
+  proximaCtx.stroke();
+
+  const binaryRadius = Math.hypot(stars[0].x - center, stars[0].y - center);
+  proximaCtx.beginPath();
+  proximaCtx.arc(center, center, binaryRadius, 0, Math.PI * 2);
+  proximaCtx.stroke();
+
+  for (const planet of planetsLocal) {
+    proximaCtx.beginPath();
+    proximaCtx.arc(star3.x, star3.y, planet.radius, 0, Math.PI * 2);
+    proximaCtx.stroke();
+  }
+
+  const bodies = [stars[0], stars[1], star3, ...planetBodies];
+  drawNearestLines(proximaCtx, bodies, proximaNeighborsToDraw);
+
+  proximaCtx.fillStyle = "rgb(255, 255, 255)";
+  for (const star of stars) {
+    proximaCtx.beginPath();
+    proximaCtx.arc(star.x, star.y, 4.2, 0, Math.PI * 2);
+    proximaCtx.fill();
+  }
+  proximaCtx.beginPath();
+  proximaCtx.arc(star3.x, star3.y, 4.4, 0, Math.PI * 2);
+  proximaCtx.fill();
+
+  for (const planet of planetBodies) {
+    proximaCtx.beginPath();
+    proximaCtx.arc(planet.x, planet.y, 3.1, 0, Math.PI * 2);
+    proximaCtx.fill();
   }
 }
 
@@ -1072,6 +1195,8 @@ function resizeCanvases() {
   galaxyShips = generateGalaxyShips(size);
   starCanvas.width = size;
   starCanvas.height = size;
+  proximaCanvas.width = size;
+  proximaCanvas.height = size;
   solarCanvas.width = size;
   solarCanvas.height = size;
   saturnCanvas.width = size;
@@ -1087,9 +1212,10 @@ function resizeCanvases() {
 
   if (currentScreen === "0") drawGalaxyScene();
   if (currentScreen === "1") drawStarScene();
-  if (currentScreen === "2") drawSolarScene();
-  if (currentScreen === "3") drawSaturnScene();
-  if (currentScreen === "4") drawEarthScene();
+  if (currentScreen === "2") drawProximaScene();
+  if (currentScreen === "3") drawSolarScene();
+  if (currentScreen === "4") drawSaturnScene();
+  if (currentScreen === "5") drawEarthScene();
 }
 
 function setScreen(nextScreen) {
@@ -1104,15 +1230,17 @@ function setScreen(nextScreen) {
 
   galaxyCanvas.classList.toggle("is-hidden", nextScreen !== "0");
   starCanvas.classList.toggle("is-hidden", nextScreen !== "1");
-  solarCanvas.classList.toggle("is-hidden", nextScreen !== "2");
-  saturnCanvas.classList.toggle("is-hidden", nextScreen !== "3");
-  earthCanvas.classList.toggle("is-hidden", nextScreen !== "4");
+  proximaCanvas.classList.toggle("is-hidden", nextScreen !== "2");
+  solarCanvas.classList.toggle("is-hidden", nextScreen !== "3");
+  saturnCanvas.classList.toggle("is-hidden", nextScreen !== "4");
+  earthCanvas.classList.toggle("is-hidden", nextScreen !== "5");
 
   if (nextScreen === "0") drawGalaxyScene();
   if (nextScreen === "1") drawStarScene();
-  if (nextScreen === "2") drawSolarScene();
-  if (nextScreen === "3") drawSaturnScene();
-  if (nextScreen === "4") drawEarthScene();
+  if (nextScreen === "2") drawProximaScene();
+  if (nextScreen === "3") drawSolarScene();
+  if (nextScreen === "4") drawSaturnScene();
+  if (nextScreen === "5") drawEarthScene();
   updateSideScaleLabel();
 }
 
@@ -1127,14 +1255,22 @@ function tick(frameTs) {
     updateStarships(dt);
     drawStarScene();
   } else if (currentScreen === "2") {
+    proximaStar3Angle += proximaAngularSpeed(PROXIMA_STAR3_PERIOD_SECONDS) * dt;
+    proximaBinaryPhase += proximaAngularSpeed(PROXIMA_BINARY_PERIOD_SECONDS) * dt;
+    for (let i = 0; i < proximaPlanetAngles.length; i += 1) {
+      const factor = proximaPlanetPeriodFactors[i];
+      proximaPlanetAngles[i] += proximaAngularSpeed(PROXIMA_OUTER_PLANET_PERIOD_SECONDS * factor) * dt;
+    }
+    drawProximaScene();
+  } else if (currentScreen === "3") {
     for (const planet of planets) {
       planet.angle += jupiterAngularSpeed(planet.periodYears) * dt;
     }
     drawSolarScene();
-  } else if (currentScreen === "3") {
+  } else if (currentScreen === "4") {
     updateSaturnOrbits(dt);
     drawSaturnScene();
-  } else if (currentScreen === "4") {
+  } else if (currentScreen === "5") {
     updateEarthOrbits(dt);
     drawEarthScene();
   }
@@ -1193,11 +1329,24 @@ accelSlider.addEventListener("input", () => {
   accelValue.textContent = String(timeAcceleration);
 });
 
+proximaAccelSlider.addEventListener("input", () => {
+  const next = Number(proximaAccelSlider.value);
+  proximaTimeAcceleration = Math.max(MIN_ACCEL, Math.min(MAX_ACCEL, next));
+  proximaAccelValue.textContent = String(proximaTimeAcceleration);
+});
+
+proximaNeighborsSlider.addEventListener("input", () => {
+  const next = Number(proximaNeighborsSlider.value);
+  proximaNeighborsToDraw = Math.max(MIN_SOLAR_NEIGHBORS, Math.min(MAX_SOLAR_NEIGHBORS, next));
+  proximaNeighborsValue.textContent = String(proximaNeighborsToDraw);
+  if (currentScreen === "2") drawProximaScene();
+});
+
 solarNeighborsSlider.addEventListener("input", () => {
   const next = Number(solarNeighborsSlider.value);
   solarNeighborsToDraw = Math.max(MIN_SOLAR_NEIGHBORS, Math.min(MAX_SOLAR_NEIGHBORS, next));
   solarNeighborsValue.textContent = String(solarNeighborsToDraw);
-  if (currentScreen === "2") drawSolarScene();
+  if (currentScreen === "3") drawSolarScene();
 });
 
 saturnAccelSlider.addEventListener("input", () => {
@@ -1210,7 +1359,7 @@ saturnStationCountSlider.addEventListener("input", () => {
   const next = Number(saturnStationCountSlider.value);
   saturnStationCount = Math.max(MIN_STATIONS, Math.min(MAX_STATIONS, next));
   saturnStationCountValue.textContent = String(saturnStationCount);
-  if (currentScreen === "3") drawSaturnScene();
+  if (currentScreen === "4") drawSaturnScene();
 });
 
 earthAccelSlider.addEventListener("input", () => {
@@ -1223,7 +1372,7 @@ stationCountSlider.addEventListener("input", () => {
   const next = Number(stationCountSlider.value);
   stationCount = Math.max(MIN_STATIONS, Math.min(MAX_STATIONS, next));
   stationCountValue.textContent = String(stationCount);
-  if (currentScreen === "4") drawEarthScene();
+  if (currentScreen === "5") drawEarthScene();
 });
 
 for (const button of screenButtons) {
