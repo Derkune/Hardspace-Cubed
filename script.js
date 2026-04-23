@@ -202,6 +202,8 @@ let leoStations = [];
 let lastFrameTs = performance.now();
 let starConnectivityDirty = true;
 let starConnectivityState = false;
+let starLineSegmentsCache = [];
+let starConnectivityLabelDirty = true;
 const galaxyImage = new Image();
 galaxyImage.src = "transformed_galaxy.png";
 
@@ -270,13 +272,61 @@ function drawNearestLines(ctx, bodies, connections) {
   }
 }
 
+function buildNearestLineSegments(bodies, connections) {
+  if (connections <= 0 || bodies.length <= 1) return [];
+  const segments = [];
+  const seen = new Set();
+
+  for (let i = 0; i < bodies.length; i += 1) {
+    const source = bodies[i];
+    const sorted = [];
+
+    for (let j = 0; j < bodies.length; j += 1) {
+      if (j === i) continue;
+      sorted.push({ index: j, dist: distanceSquared(source, bodies[j]) });
+    }
+
+    sorted.sort((a, b) => a.dist - b.dist);
+    const limit = Math.min(connections, sorted.length);
+
+    for (let n = 0; n < limit; n += 1) {
+      const j = sorted[n].index;
+      const a = i < j ? i : j;
+      const b = i < j ? j : i;
+      const key = `${a}:${b}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      segments.push({ from: a, to: b });
+    }
+  }
+
+  return segments;
+}
+
+function drawCachedNearestLines(ctx, bodies, segments) {
+  if (segments.length === 0) return;
+
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.33)";
+  ctx.lineWidth = 1;
+
+  for (const segment of segments) {
+    const source = bodies[segment.from];
+    const target = bodies[segment.to];
+    if (!source || !target) continue;
+    ctx.beginPath();
+    ctx.moveTo(source.x, source.y);
+    ctx.lineTo(target.x, target.y);
+    ctx.stroke();
+  }
+}
+
 function drawStarScene() {
   starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
   starCtx.save();
   starCtx.beginPath();
   starCtx.rect(0, 0, starCanvas.width, starCanvas.height);
   starCtx.clip();
-  drawNearestLines(starCtx, localSectorLinePoints, neighborsToDraw);
+  drawCachedNearestLines(starCtx, localSectorLinePoints, starLineSegmentsCache);
   starCtx.restore();
 
   starCtx.fillStyle = "rgb(255, 255, 255)";
@@ -796,12 +846,16 @@ function updateStarConnectivityIndicator(force) {
     const adjacency = buildKnnAdjacency(points, neighborsToDraw);
     starConnectivityState = isGraphConnected(adjacency);
     starConnectivityDirty = false;
+    starConnectivityLabelDirty = true;
   }
-  neighborsConnectivity.textContent = starConnectivityState
-    ? "Connected"
-    : "Disconnected";
-  neighborsConnectivity.classList.toggle("is-connected", starConnectivityState);
-  updateSliderIndicatorPosition();
+
+  if (force || starConnectivityLabelDirty) {
+    neighborsConnectivity.textContent = starConnectivityState
+      ? "Connected"
+      : "Disconnected";
+    neighborsConnectivity.classList.toggle("is-connected", starConnectivityState);
+    starConnectivityLabelDirty = false;
+  }
 }
 
 function pointWithinGlobalGalaxyRadius(x, y, size) {
@@ -1493,12 +1547,14 @@ function resizeCanvases() {
   earthCanvas.height = size;
   localSectorLinePoints = buildPoints(size, size, LOCAL_SECTOR_EXTRA_GRID_LAYERS);
   points = localSectorLinePoints.filter((point) => pointIsVisibleInSquare(point, size, size));
+  starLineSegmentsCache = buildNearestLineSegments(localSectorLinePoints, neighborsToDraw);
   closestFiveStars = computeClosestStars(5);
   allStarships = generateAllStarships(size, size);
   saturnRingStations = generateSaturnRingStations(size);
   leoStations = generateLeoStations(size);
   starConnectivityDirty = true;
   updateStarConnectivityIndicator(true);
+  updateSliderIndicatorPosition();
   updateSideScaleLabel();
 
   if (currentScreen === "0") drawGalaxyScene();
@@ -1604,7 +1660,9 @@ neighborsSlider.addEventListener("input", () => {
   const next = Number(neighborsSlider.value);
   neighborsToDraw = Math.max(MIN_NEIGHBORS, Math.min(MAX_NEIGHBORS, next));
   neighborsValue.textContent = String(neighborsToDraw);
+  starLineSegmentsCache = buildNearestLineSegments(localSectorLinePoints, neighborsToDraw);
   starConnectivityDirty = true;
+  starConnectivityLabelDirty = true;
   updateStarConnectivityIndicator(true);
   updateSliderIndicatorPosition();
   if (currentScreen === "1") drawStarScene();
