@@ -1,4 +1,5 @@
 def main():
+    """test"""
     print("Hello from star-map!")
 
 
