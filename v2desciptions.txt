@@ -15,4 +15,4 @@ A relatively lightweight relativistic starship built to house a small crew of a 
 Arkship:
 A heavy colonization-capable relativistic starship built to house a potential civilization of thousands with comfortable space and redundancy. A large proportion of the ship's length is dedicated to a rotating livable surface, allowing artificial gravity that isn't confined to a narrow ring. Length: 2300 M.
 Cruiser:
-An interstellar mobile military base carrying a frigate fleet, a stockpile of interplanetary ammunition, and in-situ manufacturing equipment with redundancy. Built with a lighter relativistic shield and tiny rotating crew quarters, trading off crew comfort for a smaller cross-section and higher versatility once arrived in the destination system. Length: 1900 M.
+An interstellar mobile military base carrying a frigate fleet, a stockpile of interplanetary ammunition, and in-situ manufacturing equipment with redundancy. Built with a lighter relativistic shield and tiny rotating crew quarters, trading off crew comfort for a smaller cross-section and higher versatility once arrived in the destination system. Length: 2000 M.
