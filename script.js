@@ -146,8 +146,9 @@ const leoColonicationValue = document.getElementById("leo-colonication-value");
 const localSectorTimeLabel = document.getElementById("local-sector-time-label");
 const shipEntries = document.getElementById("ship-entries");
 
-const shipRenderOrder = ["Worker", "Torchship", "Starship"];
-const shipDataFallback = {
+const shipPanelVersion = document.body.dataset.shipPanelVersion || "v2";
+
+const v1ShipDataFallback = {
   Worker: {
     size: "12 M",
     name: "Deep Space Worker",
@@ -168,6 +169,149 @@ const shipDataFallback = {
   },
 };
 
+const v2ShipDataFallback = {
+  Shuttle: {
+    name: "Shuttle",
+    description:
+      "A small low-power worker-transporter with extendable manipulator arms, designed for occasional orbital repairs and crew transfer between neighboring orbits.",
+  },
+  Transporter: {
+    name: "Transporter",
+    description:
+      "An efficient low-power cargo ship for small-scale orbital transportation inside a satellite system.",
+  },
+  Fighter: {
+    name: "Fighter",
+    description:
+      "A light low-orbit dogfighting and planetary suppression combat craft, armed with guided missiles and point-defense beam weapons.",
+  },
+  Liner: {
+    name: "Liner",
+    description:
+      "A passenger transport interplanetary torchship designed for comfortable and swift transfers with expected durations of 20 days, built with radiation protection and reliable heat dissipation in mind.",
+  },
+  Hauler: {
+    name: "Hauler",
+    description:
+      "A bulk-cargo interplanetary torchship for efficient transfer of large cargo loads over the course of weeks or months, capable of trading off between acceleration and specific impulse.",
+  },
+  Frigate: {
+    name: "Frigate",
+    description:
+      "A compact interplanetary combat ship designed to provide projection and suppression with high maneuvering power.",
+  },
+  Explorer: {
+    name: "Explorer",
+    description:
+      "A relatively lightweight relativistic starship built to house a small crew of a few hundred or less for decade-spanning voyages. Designed to be easily configured for upcoming departures to trade off habitation space, cargo space, maximum speed, and length of travel.",
+  },
+  Arkship: {
+    name: "Arkship",
+    description:
+      "A heavy colonization-capable relativistic starship built to house a potential civilization of thousands with comfortable space and redundancy. A large proportion of the ship's length is dedicated to a rotating livable surface, allowing artificial gravity that isn't confined to a narrow ring.",
+  },
+  Cruiser: {
+    name: "Cruiser",
+    description:
+      "An interstellar mobile military base carrying a frigate fleet, a stockpile of interplanetary ammunition, and in-situ manufacturing equipment with redundancy. Built with a lighter relativistic shield and tiny rotating crew quarters, trading off crew comfort for a smaller cross-section and higher versatility once arrived in the destination system.",
+  },
+};
+
+const v2ShipReferenceWidths = {
+  Shuttle: 256,
+  Transporter: 256,
+  Fighter: 256,
+  Liner: 1013,
+  Hauler: 1012,
+  Frigate: 1012,
+  Explorer: 2902,
+  Arkship: 2902,
+  Cruiser: 2902,
+};
+
+const v2MipmapComparisons = {
+  Liner: { smallerId: "Shuttle", mipmap: "v2shuttleinliner.png" },
+  Hauler: { smallerId: "Transporter", mipmap: "v2transporterinhauler.png" },
+  Frigate: { smallerId: "Fighter", mipmap: "v2fighterinfrigate.png" },
+  Explorer: { smallerId: "Liner", mipmap: "v2linerinexplorer.png" },
+  Arkship: { smallerId: "Hauler", mipmap: "v2haulerinarkship.png" },
+  Cruiser: { smallerId: "Frigate", mipmap: "v2frigateincruiser.png" },
+};
+
+const v1ComparisonMipmaps = {
+  "Worker->Torchship": "WorkerInTorchshipMipMap.png",
+  "Worker->Starship": "WorkerInStarshipMipMap.png",
+  "Torchship->Starship": "TorchshipInStarshipMipMap.png",
+};
+
+const shipPanelConfigs = {
+  v1: {
+    jsonUrl: "ships-v1.json",
+    fallbackData: v1ShipDataFallback,
+    renderOrder: ["Worker", "Torchship", "Starship"],
+    imageSrc: (id) => `${id}.png`,
+    showSizeLabels: true,
+    isValidShip: (ship) => Boolean(ship.name && ship.size && ship.description),
+    getComparisons: (ship, orderedShips, index) =>
+      orderedShips.slice(0, index).map((smaller) => ({
+        smallerId: smaller.id,
+        smallerName: smaller.name,
+        smallerSize: smaller.size,
+        mipmap: null,
+      })),
+    getComparisonSrc: (smallerId, largerId) => {
+      const key = `${smallerId}->${largerId}`;
+      return v1ComparisonMipmaps[key] || `${smallerId}.png`;
+    },
+    getComparisonWidthRatio: (smallerId, largerId, smallerShip, largerShip) => {
+      const largerMeters = parseShipSizeToMeters(largerShip.size);
+      const smallerMeters = parseShipSizeToMeters(smallerShip.size);
+      return largerMeters > 0 ? smallerMeters / largerMeters : 0;
+    },
+    getComparisonLabel: (comparison, smallerShip) => `${smallerShip.size} (to scale)`,
+    useStarshipLayout: (shipId) => shipId === "Starship",
+    useSingleLayout: (index) => index === 1,
+  },
+  v2: {
+    jsonUrl: "ships.json",
+    fallbackData: v2ShipDataFallback,
+    renderOrder: [
+      "Shuttle",
+      "Transporter",
+      "Fighter",
+      "Liner",
+      "Hauler",
+      "Frigate",
+      "Explorer",
+      "Arkship",
+      "Cruiser",
+    ],
+    imageSrc: (id) => `v2${id.toLowerCase()}.png`,
+    showSizeLabels: false,
+    isValidShip: (ship) => Boolean(ship.name && ship.description),
+    getComparisons: (ship) => {
+      const comparison = v2MipmapComparisons[ship.id];
+      if (!comparison) return [];
+      return [
+        {
+          smallerId: comparison.smallerId,
+          smallerName: comparison.smallerId,
+          mipmap: comparison.mipmap,
+        },
+      ];
+    },
+    getComparisonSrc: (_smallerId, _largerId, mipmap) => mipmap,
+    getComparisonWidthRatio: (smallerId, largerId) => {
+      const largerWidth = v2ShipReferenceWidths[largerId] || 1;
+      const smallerWidth = v2ShipReferenceWidths[smallerId] || 0;
+      return smallerWidth / largerWidth;
+    },
+    getComparisonLabel: () => "(to-scale comparison)",
+    useStarshipLayout: () => false,
+    useSingleLayout: () => true,
+  },
+};
+
 function parseShipSizeToMeters(sizeLabel) {
   const trimmed = sizeLabel.trim().toUpperCase();
   const match = trimmed.match(/^(\d+(?:\.\d+)?)\s*(KM|M)$/);
@@ -177,31 +321,16 @@ function parseShipSizeToMeters(sizeLabel) {
   return unit === "KM" ? value * 1000 : value;
 }
 
-function getComparisonImageConfig(smallerShipId, largerShipId) {
-  const key = `${smallerShipId}->${largerShipId}`;
-  const mipmaps = {
-    "Worker->Torchship": "WorkerInTorchshipMipMap.png",
-    "Worker->Starship": "WorkerInStarshipMipMap.png",
-    "Torchship->Starship": "TorchshipInStarshipMipMap.png",
-  };
-  const src = mipmaps[key];
-  if (src) {
-    return { src };
-  }
-  return { src: `${smallerShipId}.png` };
-}
-
-function renderShipsPanel(shipsData) {
+function renderShipsPanel(shipsData, config) {
   if (!shipEntries) return;
   shipEntries.textContent = "";
 
-  const orderedShips = shipRenderOrder
+  const orderedShips = config.renderOrder
     .map((id) => ({ id, ...shipsData[id] }))
-    .filter((ship) => ship.name && ship.size && ship.description);
+    .filter((ship) => config.isValidShip(ship));
 
   for (let i = 0; i < orderedShips.length; i += 1) {
     const ship = orderedShips[i];
-    const shipSizeMeters = parseShipSizeToMeters(ship.size);
 
     const entry = document.createElement("article");
     entry.className = "ship-entry";
@@ -213,56 +342,65 @@ function renderShipsPanel(shipsData) {
     name.className = "ship-entry-name";
     name.textContent = ship.name;
 
-    const size = document.createElement("span");
-    size.className = "ship-entry-size";
-    size.textContent = ship.size;
+    header.append(name);
+    if (config.showSizeLabels) {
+      const size = document.createElement("span");
+      size.className = "ship-entry-size";
+      size.textContent = ship.size;
+      header.append(size);
+    }
 
     const image = document.createElement("img");
     image.className = "ship-entry-image";
-    image.src = `${ship.id}.png`;
+    image.src = config.imageSrc(ship.id);
     image.alt = ship.name;
 
     const description = document.createElement("p");
     description.className = "ship-entry-description";
     description.textContent = ship.description;
 
-    header.append(name, size);
     entry.append(header, image, description);
 
-    if (i > 0) {
+    const comparisonsList = config.getComparisons(ship, orderedShips, i);
+    if (comparisonsList.length > 0) {
       const comparisons = document.createElement("div");
       comparisons.className = "ship-comparison-list";
-      if (ship.id === "Starship") {
+      if (config.useStarshipLayout(ship.id)) {
         comparisons.classList.add("ship-comparison-list--starship");
       }
-      if (i === 1) {
+      if (config.useSingleLayout(i) || comparisonsList.length === 1) {
         comparisons.classList.add("ship-comparison-list--single");
       }
 
-      for (let j = 0; j < i; j += 1) {
-        const smaller = orderedShips[j];
-        const smallerSizeMeters = parseShipSizeToMeters(smaller.size);
-        const ratio = shipSizeMeters > 0 ? smallerSizeMeters / shipSizeMeters : 0;
+      for (const comparison of comparisonsList) {
+        const smallerShip = orderedShips.find((s) => s.id === comparison.smallerId);
+        const ratio = config.getComparisonWidthRatio(
+          comparison.smallerId,
+          ship.id,
+          smallerShip,
+          ship,
+        );
         const clampedRatio = Math.max(0, Math.min(ratio, 1));
 
         const comparisonRow = document.createElement("div");
         comparisonRow.className = "ship-scale-row";
-        if (ship.id === "Starship") {
+        if (config.useStarshipLayout(ship.id)) {
           comparisonRow.classList.add("ship-scale-row--starship");
         }
 
         const comparisonImage = document.createElement("img");
         comparisonImage.className = "ship-scale-image";
-        const comparisonImageConfig = getComparisonImageConfig(smaller.id, ship.id);
-        comparisonImage.src = comparisonImageConfig.src;
-        comparisonImage.alt = `${smaller.name} to scale`;
-        // Always size comparisons from in-universe dimensions.
-        // Mipmaps are still used as the source image for cleaner downscaling.
+        comparisonImage.src = config.getComparisonSrc(
+          comparison.smallerId,
+          ship.id,
+          comparison.mipmap,
+        );
+        comparisonImage.alt = `${comparison.smallerName} to scale`;
         comparisonImage.style.width = `${clampedRatio * 100}%`;
 
         const comparisonLabel = document.createElement("span");
         comparisonLabel.className = "ship-scale-label";
-        comparisonLabel.textContent = `${smaller.size} (to scale)`;
+        comparisonLabel.textContent = config.getComparisonLabel(comparison, smallerShip);
 
         comparisonRow.append(comparisonImage, comparisonLabel);
         comparisons.append(comparisonRow);
@@ -277,14 +415,14 @@ function renderShipsPanel(shipsData) {
 
 async function loadShipsPanel() {
   if (!shipEntries) return;
+  const config = shipPanelConfigs[shipPanelVersion] || shipPanelConfigs.v2;
   try {
-    const response = await fetch("ships.json");
+    const response = await fetch(config.jsonUrl);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const shipsData = await response.json();
-    renderShipsPanel(shipsData);
+    renderShipsPanel(shipsData, config);
   } catch (error) {
-    // Local file:// sessions can block fetch; keep panel functional with fallback data.
-    renderShipsPanel(shipDataFallback);
+    renderShipsPanel(config.fallbackData, config);
   }
 }
 

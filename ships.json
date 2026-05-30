@@ -1,17 +1,38 @@
 {
-    "Worker": {
-        "size": "12 M",
-        "name": "Deep Space Worker",
-        "description": "A low-power small-crew tug with manipulator arms, designed for space construction and repair."
+    "Shuttle": {
+        "name": "Shuttle",
+        "description": "A small low-power worker-transporter with extendable manipulator arms, designed for occasional orbital repairs and crew transfer between neighboring orbits."
     },
-    "Torchship": {
-        "size": "235 M",
-        "name": "Interplanetary Torchship",
-        "description": "A full-complement interplanetary transport with moderate combat capabilities, designed to traverse any star system using 1-g brachistochrone trajectories."
+    "Transporter": {
+        "name": "Transporter",
+        "description": "An efficient low-power cargo ship for small-scale orbital transportation inside a satellite system."
     },
-    "Starship": {
-        "size": "1.2 KM",
-        "name": "Relativistic Starship",
-        "description": "An enormous mobile base with an erosion shield, habitation, and carrier capabilities, designed to traverse distances between stars at relativistic speeds over the course of decades."
+    "Fighter": {
+        "name": "Fighter",
+        "description": "A light low-orbit dogfighting and planetary suppression combat craft, armed with guided missiles and point-defense beam weapons."
+    },
+    "Liner": {
+        "name": "Liner",
+        "description": "A passenger transport interplanetary torchship designed for comfortable and swift transfers with expected durations of 20 days, built with radiation protection and reliable heat dissipation in mind."
+    },
+    "Hauler": {
+        "name": "Hauler",
+        "description": "A bulk-cargo interplanetary torchship for efficient transfer of large cargo loads over the course of weeks or months, capable of trading off between acceleration and specific impulse."
+    },
+    "Frigate": {
+        "name": "Frigate",
+        "description": "A compact interplanetary combat ship designed to provide projection and suppression with high maneuvering power."
+    },
+    "Explorer": {
+        "name": "Explorer",
+        "description": "A relatively lightweight relativistic starship built to house a small crew of a few hundred or less for decade-spanning voyages. Designed to be easily configured for upcoming departures to trade off habitation space, cargo space, maximum speed, and length of travel."
+    },
+    "Arkship": {
+        "name": "Arkship",
+        "description": "A heavy colonization-capable relativistic starship built to house a potential civilization of thousands with comfortable space and redundancy. A large proportion of the ship's length is dedicated to a rotating livable surface, allowing artificial gravity that isn't confined to a narrow ring."
+    },
+    "Cruiser": {
+        "name": "Cruiser",
+        "description": "An interstellar mobile military base carrying a frigate fleet, a stockpile of interplanetary ammunition, and in-situ manufacturing equipment with redundancy. Built with a lighter relativistic shield and tiny rotating crew quarters, trading off crew comfort for a smaller cross-section and higher versatility once arrived in the destination system."
     }
 }
