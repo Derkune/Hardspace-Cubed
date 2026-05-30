@@ -1,18 +1,18 @@
 Shuttle:
 A small low-power worker-transporter with extendable manipulator arms, designed for occasional orbital repairs and crew transfer between neighboring orbits. Length: 20 M.
 Transporter:
-An efficient low-power cargo ship for small-scale orbital transportation inside a satelite system. Length: 25 M.
+An efficient low-power cargo ship for small-scale orbital transportation inside a satellite system. Length: 25 M.
 Fighter:
-A light low-orbit dogfighting and planetary suppression combat craft, armed with guided missiles and point defense beam weapons. Length: 20 M.
+A light low-orbit dogfighting and planetary suppression combat craft, armed with guided missiles and point-defense beam weapons. Length: 20 M.
 Liner:
-A passenger transport interplanetary torchship craft for comfortable and swift transfers with expected durations of 20 days, built with radiation protection and reliable heat dissipation in mind. Length: 150 M.
+A passenger transport interplanetary torchship designed for comfortable and swift transfers with expected durations of 20 days, built with radiation protection and reliable heat dissipation in mind. Length: 150 M.
 Hauler:
-A bulk-cargo interplanetary torchship craft for efficient transfer of large cargo loads over the course of weeks or months, being able to trade off between acceleration and specific impulse. Length: 200 M.
+A bulk-cargo interplanetary torchship for efficient transfer of large cargo loads over the course of weeks or months, capable of trading off between acceleration and specific impulse. Length: 200 M.
 Frigate:
-A compact interplanetary combat ship designed to provide projection and suppression with a high maneuvering power. Length: 150 M.
+A compact interplanetary combat ship designed to provide projection and suppression with high maneuvering power. Length: 150 M.
 Explorer:
-A relatively light-weight relativistic starship built to house a small crew of a few hundreds or less for decade-spanning voyages. Designed to be easily configured for upcoming departures to trade off habitation space, cargo space, maximum speed and length of travel. Length: 1700 M.
+A relatively lightweight relativistic starship built to house a small crew of a few hundred or less for decade-spanning voyages. Designed to be easily configured for upcoming departures to trade off habitation space, cargo space, maximum speed, and length of travel. Length: 1700 M.
 Arkship:
-A heavy colonization-capable relativistic starship built to house a potential civilization of thousands with comfortable space and redundancy. A large proportion of ship length is dedicated to a rotating livable surface, allowing artificial gravity that isn't confined to a narrow ring. Length: 2300 M.
+A heavy colonization-capable relativistic starship built to house a potential civilization of thousands with comfortable space and redundancy. A large proportion of the ship's length is dedicated to a rotating livable surface, allowing artificial gravity that isn't confined to a narrow ring. Length: 2300 M.
 Cruiser:
-An interstellar mobile military base, carrying a frigate fleet, a stockpile of interplanetary ammunition, and in-situ manufacturing equipment with redundancy. Built with a lighter relativistic shield and tiny rotating crew quarters, trading off crew comfort for smaller cross-section and higher versatility once arrived in destination system. Length: 1900 M.
+An interstellar mobile military base carrying a frigate fleet, a stockpile of interplanetary ammunition, and in-situ manufacturing equipment with redundancy. Built with a lighter relativistic shield and tiny rotating crew quarters, trading off crew comfort for a smaller cross-section and higher versatility once arrived in the destination system. Length: 1900 M.
