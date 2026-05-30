@@ -230,12 +230,12 @@ const v2ShipReferenceWidths = {
 };
 
 const v2MipmapComparisons = {
-  Liner: { smallerId: "Shuttle", mipmap: "v2shuttleinliner.png" },
-  Hauler: { smallerId: "Transporter", mipmap: "v2transporterinhauler.png" },
-  Frigate: { smallerId: "Fighter", mipmap: "v2fighterinfrigate.png" },
-  Explorer: { smallerId: "Liner", mipmap: "v2linerinexplorer.png" },
-  Arkship: { smallerId: "Hauler", mipmap: "v2haulerinarkship.png" },
-  Cruiser: { smallerId: "Frigate", mipmap: "v2frigateincruiser.png" },
+  Liner: { smallerId: "Shuttle", mipmap: "v2shuttleinliner.png", mipmapWidth: 101 },
+  Hauler: { smallerId: "Transporter", mipmap: "v2transporterinhauler.png", mipmapWidth: 101 },
+  Frigate: { smallerId: "Fighter", mipmap: "v2fighterinfrigate.png", mipmapWidth: 101 },
+  Explorer: { smallerId: "Liner", mipmap: "v2linerinexplorer.png", mipmapWidth: 290 },
+  Arkship: { smallerId: "Hauler", mipmap: "v2haulerinarkship.png", mipmapWidth: 290 },
+  Cruiser: { smallerId: "Frigate", mipmap: "v2frigateincruiser.png", mipmapWidth: 290 },
 };
 
 const v1ComparisonMipmaps = {
@@ -301,10 +301,10 @@ const shipPanelConfigs = {
       ];
     },
     getComparisonSrc: (_smallerId, _largerId, mipmap) => mipmap,
-    getComparisonWidthRatio: (smallerId, largerId) => {
+    getComparisonWidthRatio: (_smallerId, largerId) => {
       const largerWidth = v2ShipReferenceWidths[largerId] || 1;
-      const smallerWidth = v2ShipReferenceWidths[smallerId] || 0;
-      return smallerWidth / largerWidth;
+      const mipmapWidth = v2MipmapComparisons[largerId]?.mipmapWidth || 0;
+      return mipmapWidth / largerWidth;
     },
     getComparisonLabel: () => "(to-scale comparison)",
     useStarshipLayout: () => false,
