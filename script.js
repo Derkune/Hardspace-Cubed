@@ -239,9 +239,9 @@ const v2MipmapComparisons = {
 };
 
 const v2ShipDisplayScales = {
-  Shuttle: 0.25,
-  Transporter: 0.25,
-  Fighter: 0.25,
+  Shuttle: 0.125,
+  Transporter: 0.125,
+  Fighter: 0.125,
   Liner: 0.5,
   Hauler: 0.5,
   Frigate: 0.5,
