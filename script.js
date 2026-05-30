@@ -238,6 +238,15 @@ const v2MipmapComparisons = {
   Cruiser: { smallerId: "Frigate", mipmap: "v2frigateincruiser.png", mipmapWidth: 290 },
 };
 
+const v2ShipDisplayScales = {
+  Shuttle: 0.25,
+  Transporter: 0.25,
+  Fighter: 0.25,
+  Liner: 0.5,
+  Hauler: 0.5,
+  Frigate: 0.5,
+};
+
 const v1ComparisonMipmaps = {
   "Worker->Torchship": "WorkerInTorchshipMipMap.png",
   "Worker->Starship": "WorkerInStarshipMipMap.png",
@@ -307,6 +316,7 @@ const shipPanelConfigs = {
       return mipmapWidth / largerWidth;
     },
     getComparisonLabel: () => "(to-scale comparison)",
+    getDisplayScale: (shipId) => v2ShipDisplayScales[shipId] ?? 1,
     useStarshipLayout: () => false,
     useSingleLayout: () => true,
   },
@@ -350,10 +360,16 @@ function renderShipsPanel(shipsData, config) {
       header.append(size);
     }
 
+    const displayScale = config.getDisplayScale?.(ship.id) ?? 1;
+
     const image = document.createElement("img");
     image.className = "ship-entry-image";
     image.src = config.imageSrc(ship.id);
     image.alt = ship.name;
+    if (displayScale !== 1) {
+      image.style.width = `${displayScale * 100}%`;
+      image.style.alignSelf = "center";
+    }
 
     const description = document.createElement("p");
     description.className = "ship-entry-description";
@@ -396,7 +412,7 @@ function renderShipsPanel(shipsData, config) {
           comparison.mipmap,
         );
         comparisonImage.alt = `${comparison.smallerName} to scale`;
-        comparisonImage.style.width = `${clampedRatio * 100}%`;
+        comparisonImage.style.width = `${clampedRatio * displayScale * 100}%`;
 
         const comparisonLabel = document.createElement("span");
         comparisonLabel.className = "ship-scale-label";
