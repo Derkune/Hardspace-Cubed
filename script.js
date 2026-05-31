@@ -233,9 +233,18 @@ const v2MipmapComparisons = {
   Liner: { smallerId: "Shuttle", mipmap: "v2shuttleinliner.png", mipmapWidth: 101 },
   Hauler: { smallerId: "Transporter", mipmap: "v2transporterinhauler.png", mipmapWidth: 101 },
   Frigate: { smallerId: "Fighter", mipmap: "v2fighterinfrigate.png", mipmapWidth: 101 },
-  Explorer: { smallerId: "Liner", mipmap: "v2linerinexplorer.png", mipmapWidth: 290 },
-  Arkship: { smallerId: "Hauler", mipmap: "v2haulerinarkship.png", mipmapWidth: 290 },
-  Cruiser: { smallerId: "Frigate", mipmap: "v2frigateincruiser.png", mipmapWidth: 290 },
+  Explorer: [
+    { smallerId: "Shuttle", mipmap: "v2shuttleinexplorer.png", mipmapWidth: 29 },
+    { smallerId: "Liner", mipmap: "v2linerinexplorer.png", mipmapWidth: 290 },
+  ],
+  Arkship: [
+    { smallerId: "Transporter", mipmap: "v2transporterinarkship.png", mipmapWidth: 29 },
+    { smallerId: "Hauler", mipmap: "v2haulerinarkship.png", mipmapWidth: 290 },
+  ],
+  Cruiser: [
+    { smallerId: "Fighter", mipmap: "v2fighterincruiser.png", mipmapWidth: 29 },
+    { smallerId: "Frigate", mipmap: "v2frigateincruiser.png", mipmapWidth: 290 },
+  ],
 };
 
 const v2ShipDisplayScales = {
@@ -301,23 +310,27 @@ const shipPanelConfigs = {
     getComparisons: (ship) => {
       const comparison = v2MipmapComparisons[ship.id];
       if (!comparison) return [];
-      return [
-        {
-          smallerId: comparison.smallerId,
-          smallerName: comparison.smallerId,
-          mipmap: comparison.mipmap,
-        },
-      ];
+      const items = Array.isArray(comparison) ? comparison : [comparison];
+      return items.map((item) => ({
+        smallerId: item.smallerId,
+        smallerName: item.smallerId,
+        mipmap: item.mipmap,
+      }));
     },
     getComparisonSrc: (_smallerId, _largerId, mipmap) => mipmap,
-    getComparisonWidthRatio: (_smallerId, largerId) => {
+    getComparisonWidthRatio: (smallerId, largerId) => {
       const largerWidth = v2ShipReferenceWidths[largerId] || 1;
-      const mipmapWidth = v2MipmapComparisons[largerId]?.mipmapWidth || 0;
-      return mipmapWidth / largerWidth;
+      const comparison = v2MipmapComparisons[largerId];
+      const items = Array.isArray(comparison) ? comparison : comparison ? [comparison] : [];
+      const match = items.find((item) => item.smallerId === smallerId);
+      return (match?.mipmapWidth || 0) / largerWidth;
     },
     getComparisonLabel: () => "(to-scale comparison)",
     getDisplayScale: (shipId) => v2ShipDisplayScales[shipId] ?? 1,
-    useStarshipLayout: () => false,
+    useStarshipLayout: (shipId) => {
+      const comparison = v2MipmapComparisons[shipId];
+      return Array.isArray(comparison) && comparison.length > 1;
+    },
     useSingleLayout: () => true,
   },
 };
