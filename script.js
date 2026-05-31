@@ -443,6 +443,89 @@ function renderShipsPanel(shipsData, config) {
   }
 }
 
+const SPLIT_MIN_RATIO = 0.2;
+const SPLIT_MAX_RATIO = 0.8;
+const SPLIT_STACKED_MQ = "(max-width: 1100px)";
+
+function initSplitLayout() {
+  const layout = document.querySelector(".split-layout");
+  const divider = document.querySelector(".split-divider");
+  if (!layout || !divider) return;
+
+  const stackedQuery = window.matchMedia(SPLIT_STACKED_MQ);
+
+  function isStacked() {
+    return stackedQuery.matches;
+  }
+
+  function setSplitRatio(ratio) {
+    const clamped = Math.max(SPLIT_MIN_RATIO, Math.min(SPLIT_MAX_RATIO, ratio));
+    layout.style.setProperty("--split-ships", `${clamped * 100}%`);
+  }
+
+  function ratioFromPointer(clientX) {
+    const rect = layout.getBoundingClientRect();
+    if (rect.width <= 0) return SPLIT_MIN_RATIO;
+    return (clientX - rect.left) / rect.width;
+  }
+
+  function onDividerPointerDown(event) {
+    if (isStacked() || event.button !== 0) return;
+    event.preventDefault();
+    divider.setPointerCapture(event.pointerId);
+
+    function onPointerMove(moveEvent) {
+      if (moveEvent.pointerId !== event.pointerId) return;
+      setSplitRatio(ratioFromPointer(moveEvent.clientX));
+    }
+
+    function endDrag(endEvent) {
+      if (endEvent.pointerId !== event.pointerId) return;
+      divider.releasePointerCapture(event.pointerId);
+      divider.removeEventListener("pointermove", onPointerMove);
+      divider.removeEventListener("pointerup", endDrag);
+      divider.removeEventListener("pointercancel", endDrag);
+    }
+
+    divider.addEventListener("pointermove", onPointerMove);
+    divider.addEventListener("pointerup", endDrag);
+    divider.addEventListener("pointercancel", endDrag);
+  }
+
+  divider.addEventListener("pointerdown", onDividerPointerDown);
+
+  function getCurrentSplitRatio() {
+    const raw =
+      layout.style.getPropertyValue("--split-ships").trim() ||
+      getComputedStyle(layout).getPropertyValue("--split-ships").trim();
+    const parsed = parseFloat(raw);
+    return Number.isNaN(parsed) ? 0.5 : parsed / 100;
+  }
+
+  divider.addEventListener("keydown", (event) => {
+    if (isStacked()) return;
+
+    const current = getCurrentSplitRatio();
+    const step = 0.02;
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      setSplitRatio(current - step);
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      setSplitRatio(current + step);
+    }
+  });
+}
+
+function initScreenWrapperResizeObserver() {
+  if (!wrapper) return;
+  const observer = new ResizeObserver(() => {
+    resizeCanvases();
+  });
+  observer.observe(wrapper);
+}
+
 async function loadShipsPanel() {
   if (!shipEntries) return;
   const config = shipPanelConfigs[shipPanelVersion] || shipPanelConfigs.v2;
@@ -2350,6 +2433,10 @@ for (const button of screenButtons) {
 allStations = generateAllStations();
 allSaturnStations = generateAllSaturnStations();
 loadShipsPanel();
+if (shipPanelVersion === "v2") {
+  initSplitLayout();
+}
+initScreenWrapperResizeObserver();
 window.addEventListener("resize", resizeCanvases);
 window.addEventListener("resize", updateSliderIndicatorPosition);
 resizeCanvases();
