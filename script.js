@@ -583,7 +583,7 @@ let galaxyVisibleShipCount = Number(galaxyShipCountSlider.value);
 let galaxyShips = [];
 let points = [];
 let localSectorLinePoints = [];
-let closestFiveStars = [];
+let starLaneAdjacency = [];
 let allStarships = [];
 let neighborsToDraw = Number(neighborsSlider.value);
 let visibleStarshipCount = Number(shipCountSlider.value);
@@ -1362,6 +1362,12 @@ function buildKnnAdjacency(bodies, connections) {
   return adjacency;
 }
 
+function rebuildStarLaneAdjacency() {
+  starLaneAdjacency = buildKnnAdjacency(points, neighborsToDraw);
+  starConnectivityDirty = true;
+  starConnectivityLabelDirty = true;
+}
+
 function isGraphConnected(adjacency) {
   if (adjacency.length === 0) return true;
   const visited = new Set([0]);
@@ -1390,8 +1396,7 @@ function updateSliderIndicatorPosition() {
 
 function updateStarConnectivityIndicator(force) {
   if (force || starConnectivityDirty) {
-    const adjacency = buildKnnAdjacency(points, neighborsToDraw);
-    starConnectivityState = isGraphConnected(adjacency);
+    starConnectivityState = isGraphConnected(starLaneAdjacency);
     starConnectivityDirty = false;
     starConnectivityLabelDirty = true;
   }
@@ -1545,20 +1550,6 @@ function findClosestStarIndex(x, y) {
   return bestIndex;
 }
 
-function computeClosestStars(k) {
-  const neighbors = Array.from({ length: points.length }, () => []);
-  for (let i = 0; i < points.length; i += 1) {
-    const sorted = [];
-    for (let j = 0; j < points.length; j += 1) {
-      if (j === i) continue;
-      sorted.push({ index: j, dist: distanceSquared(points[i], points[j]) });
-    }
-    sorted.sort((a, b) => a.dist - b.dist);
-    neighbors[i] = sorted.slice(0, k).map((entry) => entry.index);
-  }
-  return neighbors;
-}
-
 function generateAllStarships(width, height) {
   const generated = [];
   const speedUnit = width;
@@ -1594,7 +1585,7 @@ function updateStarships(dt) {
       ship.x = target.x;
       ship.y = target.y;
 
-      const options = closestFiveStars[ship.targetStarIndex] || [];
+      const options = starLaneAdjacency[ship.targetStarIndex] || [];
       if (options.length > 0) {
         ship.targetStarIndex = options[randomInt(options.length)];
       }
@@ -2163,11 +2154,10 @@ function resizeCanvases() {
   localSectorLinePoints = buildPoints(size, size, LOCAL_SECTOR_EXTRA_GRID_LAYERS);
   points = localSectorLinePoints.filter((point) => pointIsVisibleInSquare(point, size, size));
   starLineSegmentsCache = buildNearestLineSegments(localSectorLinePoints, neighborsToDraw);
-  closestFiveStars = computeClosestStars(5);
+  rebuildStarLaneAdjacency();
   allStarships = generateAllStarships(size, size);
   saturnRingStations = generateSaturnRingStations(size);
   leoStations = generateLeoStations(size);
-  starConnectivityDirty = true;
   updateStarConnectivityIndicator(true);
   updateSliderIndicatorPosition();
   updateSideScaleLabel();
@@ -2306,8 +2296,7 @@ neighborsSlider.addEventListener("input", () => {
   neighborsToDraw = Math.max(MIN_NEIGHBORS, Math.min(MAX_NEIGHBORS, next));
   neighborsValue.textContent = String(neighborsToDraw);
   starLineSegmentsCache = buildNearestLineSegments(localSectorLinePoints, neighborsToDraw);
-  starConnectivityDirty = true;
-  starConnectivityLabelDirty = true;
+  rebuildStarLaneAdjacency();
   updateStarConnectivityIndicator(true);
   updateSliderIndicatorPosition();
   if (currentScreen === "1") drawStarScene();
