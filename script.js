@@ -325,7 +325,8 @@ const shipPanelConfigs = {
       const match = items.find((item) => item.smallerId === smallerId);
       return (match?.mipmapWidth || 0) / largerWidth;
     },
-    getComparisonLabel: () => "(to-scale comparison)",
+    getComparisonLabel: (comparison, smallerShip) =>
+      `${smallerShip?.name ?? comparison.smallerName ?? comparison.smallerId} (to scale)`,
     getDisplayScale: (shipId) => v2ShipDisplayScales[shipId] ?? 1,
     useStarshipLayout: (shipId) => {
       const comparison = v2MipmapComparisons[shipId];
